@@ -1,24 +1,36 @@
 
+// Bu dosya, bir sınavın temel bilgilerini temsil eden Quiz modelini içerir.
+// Firestore'daki 'quizzes' koleksiyonundaki her bir belge bu modele karşılık gelir.
+
 class Quiz {
-  final String id;
+  final String id; // Firestore'daki belge ID'si
   final String title;
   final String description;
   final String category;
-  final bool isPublished;
+  final String imageUrl;
   final int durationMinutes;
   final int totalQuestions;
-  final String createdByUid;
-  final String imageUrl;
 
-  const Quiz({
+  Quiz({
     required this.id,
     required this.title,
     required this.description,
     required this.category,
-    required this.isPublished,
+    required this.imageUrl,
     required this.durationMinutes,
     required this.totalQuestions,
-    required this.createdByUid,
-    required this.imageUrl,
   });
+
+  // Firestore'dan gelen veriyi (Map<String, dynamic>) Quiz nesnesine dönüştüren factory constructor.
+  factory Quiz.fromFirestore(String documentId, Map<String, dynamic> data) {
+    return Quiz(
+      id: documentId,
+      title: data['title'] ?? 'Başlık Yok',
+      description: data['description'] ?? 'Açıklama Yok',
+      category: data['category'] ?? 'Kategori Yok',
+      imageUrl: data['imageUrl'] ?? '',
+      durationMinutes: data['durationMinutes'] ?? 0,
+      totalQuestions: data['totalQuestions'] ?? 0,
+    );
+  }
 }
