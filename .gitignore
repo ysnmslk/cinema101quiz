@@ -1,0 +1,58 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+
+# Android
+android/app/google-services.json
+android/local.properties
+android/key.properties
+android/app/src/main/assets/flutter_assets/
+android/app/build/
+android/build/
+android/.gradle/
+*.apk
+*.aab
+
+# iOS
+ios/Runner/GoogleService-Info.plist
+ios/Flutter/App.framework
+ios/Flutter/engine
+ios/Flutter/flutter_assets/
+ios/Pods/
+ios/Runner.xcworkspace/
+ios/Runner.xcarchive/
+ios/.symlinks/
+ios/build/
+ios/Pods/
+ios/Podfile.lock
+
+# Web
+web/build
+
+# IDE specific
+.idea/
+*.iml
+*.iws
+.vscode/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# Sensitive files
+secrets.json
