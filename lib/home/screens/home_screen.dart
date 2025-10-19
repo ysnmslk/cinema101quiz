@@ -1,55 +1,49 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:myapp/login/providers/auth_provider.dart'; // Doğru import
+import 'package:myapp/login/providers/auth_provider.dart';
+import 'package:myapp/quiz/data/dummy_quizzes.dart';
+import 'package:myapp/quiz/widgets/quiz_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // HATA DÜZELTİLDİ: AppAuthProvider kullanılıyor
-    final authProvider = Provider.of<AppAuthProvider>(context);
-    final user = authProvider.user;
+    final appAuthProvider = Provider.of<AppAuthProvider>(context);
+    final user = appAuthProvider.user;
+    
+    // Sadece yayınlanmış quizleri filtrele
+    final publishedQuizzes = dummyQuizzes.where((quiz) => quiz.isPublished).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ana Sayfa'),
-        // EKSTRA: Çıkış yapma butonu eklendi
+        title: const Text('Tüm Quizler'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              // authProvider üzerinden çıkış yapma fonksiyonu çağrılıyor
-              authProvider.signOut();
-            },
-            tooltip: 'Çıkış Yap',
-          ),
+          if (user != null)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () {
+                context.read<AppAuthProvider>().signOut();
+              },
+              tooltip: 'Çıkış Yap',
+            ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'Hoş Geldiniz!',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 20),
-            // EKSTRA: Giriş yapan kullanıcı bilgileri gösteriliyor
-            if (user != null) ...[
-              CircleAvatar(
-                backgroundImage: NetworkImage(user.photoURL ?? ''),
-                radius: 40,
-              ),
-              const SizedBox(height: 10),
-              Text('${user.displayName}'),
-              const SizedBox(height: 5),
-              Text('${user.email}'),
-            ] else ...[
-              const Text('Kullanıcı bilgileri yüklenemedi.'),
-            ]
-          ],
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, // Yan yana iki kart göster
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.75, // Kartların en-boy oranı
+          ),
+          itemCount: publishedQuizzes.length,
+          itemBuilder: (context, index) {
+            final quiz = publishedQuizzes[index];
+            return QuizCard(quiz: quiz);
+          },
         ),
       ),
     );

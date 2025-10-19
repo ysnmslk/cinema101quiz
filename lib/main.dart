@@ -24,6 +24,7 @@ class MyApp extends StatelessWidget {
       create: (context) => AppAuthProvider(),
       child: MaterialApp(
         title: 'Flutter Google Auth',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),

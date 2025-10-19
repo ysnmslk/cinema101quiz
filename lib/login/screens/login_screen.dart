@@ -27,10 +27,6 @@ class LoginScreen extends StatelessWidget {
                 final authProvider = Provider.of<AppAuthProvider>(context, listen: false);
                 authProvider.signInWithGoogle();
               },
-              icon: Image.asset(
-                'assets/images/google_logo.png', // Bu dosyanın assets/images altına eklenmesi gerekiyor
-                height: 24.0,
-              ),
               label: const Text('Google ile Giriş Yap'),
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.black,
