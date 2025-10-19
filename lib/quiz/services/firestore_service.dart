@@ -19,7 +19,7 @@ class FirestoreService {
       // Gelen her bir belgeyi (document) Quiz nesnesine dönüştürüp bir liste oluşturuyoruz.
       List<Quiz> quizzes = snapshot.docs.map((doc) {
         // Belge verilerini ve belge ID'sini kullanarak Quiz nesnesi oluşturuyoruz.
-        return Quiz.fromFirestore(doc.id, doc.data() as Map<String, dynamic>);
+        return Quiz.fromFirestore(doc.id as String, doc.data() as Map<String, dynamic>);
       }).toList();
 
       return quizzes;

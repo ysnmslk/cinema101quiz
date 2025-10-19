@@ -2,6 +2,8 @@
 // Bu dosya, bir sınav sorusunu temsil eden Question modelini içerir.
 // Firestore'daki 'quiz_questions' koleksiyonundaki her bir belge bu modele karşılık gelir.
 
+
+
 class Question {
   final String id; // Firestore'daki belge ID'si
   final String quizId;

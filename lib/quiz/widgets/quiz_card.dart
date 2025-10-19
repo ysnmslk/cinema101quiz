@@ -4,7 +4,7 @@ import 'package:myapp/quiz/models/quiz_model.dart';
 import 'package:myapp/quiz/screens/quiz_screen.dart'; // Yeni ekranı import et
 
 class QuizCard extends StatelessWidget {
-  final Quiz quiz;
+   final Quiz quiz;
 
   const QuizCard({super.key, required this.quiz});
 
@@ -29,7 +29,7 @@ class QuizCard extends StatelessWidget {
           children: [
             Expanded(
               child: Image.network(
-                quiz.imageUrl,
+                quiz.imageUrl ?? '', //quiz.imageUrl ?? '',
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;

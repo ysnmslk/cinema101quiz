@@ -35,7 +35,7 @@ class QuizScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Chip(avatar: const Icon(Icons.timer_outlined), label: Text('${quiz.durationMinutes} dakika')),
-                  Chip(avatar: const Icon(Icons.help_outline), label: Text('${quiz.totalQuestions} soru')),
+                  Chip(avatar: const Icon(Icons.help_outline), label: Text('${quiz.durationMinutes} soru')),
                 ],
               ),
               const SizedBox(height: 48),

@@ -2,6 +2,9 @@
 // Bu dosya, bir sınavın temel bilgilerini temsil eden Quiz modelini içerir.
 // Firestore'daki 'quizzes' koleksiyonundaki her bir belge bu modele karşılık gelir.
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+
 class Quiz {
   final String id; // Firestore'daki belge ID'si
   final String title;

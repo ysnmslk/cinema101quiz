@@ -82,17 +82,17 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore db = FirebaseFirestore.instance;
   print("Firebase bağlantısı başarılı.");
 
   // Önce mevcut verileri temizleyelim (isteğe bağlı ama önerilir)
   print("Mevcut veriler temizleniyor...");
-  await _db.collection("quizzes").get().then((snapshot) {
+  await db.collection("quizzes").get().then((snapshot) {
     for (DocumentSnapshot ds in snapshot.docs) {
       ds.reference.delete();
     }
   });
-  await _db.collection("quiz_questions").get().then((snapshot) {
+  await db.collection("quiz_questions").get().then((snapshot) {
     for (DocumentSnapshot ds in snapshot.docs) {
       ds.reference.delete();
     }
@@ -105,7 +105,7 @@ Future<void> main() async {
   for (var quizData in sampleQuizzesData) {
     // 1. Quizi 'quizzes' koleksiyonuna ekle
     final quizInfo = quizData["quiz"] as Map<String, dynamic>;
-    final quizDocRef = await _db.collection("quizzes").add(quizInfo);
+    final quizDocRef = await db.collection("quizzes").add(quizInfo);
     final newQuizId = quizDocRef.id; // Firebase tarafından oluşturulan yeni ID'yi al
 
     print("Eklendi: ${quizInfo['title']} (ID: $newQuizId)");
@@ -115,7 +115,7 @@ Future<void> main() async {
     for (var questionData in questions) {
       // Soru verisine, hangi quize ait olduğunu belirten 'quiz_id' alanını ekle
       questionData["quiz_id"] = newQuizId;
-      await _db.collection("quiz_questions").add(questionData);
+      await db.collection("quiz_questions").add(questionData);
     }
      print(" -> ${questions.length} adet soru eklendi.");
   }
