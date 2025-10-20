@@ -1,36 +1,55 @@
-# Cinema 101 Quiz - Proje Mavi Kopyası
+
+# Blueprint: Flutter Quiz Uygulaması
 
 ## Genel Bakış
 
-Cinema 101 Quiz, kullanıcılara sinema ve filmlerle ilgili eğlenceli ve bilgilendirici bir quiz deneyimi sunmayı amaçlayan bir Flutter uygulamasıdır. Kullanıcılar farklı kategorilerdeki soruları yanıtlayarak sinema bilgilerini test edebilirler.
+Bu proje, kullanıcılara çeşitli konularda quizler sunan bir Flutter uygulamasıdır. Firebase Firestore'u arka uç olarak kullanarak quizleri, soruları ve kullanıcı cevaplarını yönetir. Uygulama, modern bir kullanıcı arayüzü, tema yönetimi (açık/koyu mod) ve Firebase entegrasyonu özelliklerini içerir.
 
-## Mevcut Özellikler (v0.1)
+## Uygulanan Stil, Tasarım ve Özellikler
 
-- **Temel Flutter Proje Yapısı:** Standart Flutter proje iskeleti oluşturuldu.
-- **Firebase Entegrasyonu (Android):**
-  - Firebase projesiyle bağlantı kuruldu.
-  - Android uygulaması için `google-services.json` yapılandırıldı.
-  - Gerekli SHA-1 ve SHA-256 parmak izleri Firebase projesine eklendi.
-- **Sürüm Kontrolü:**
-  - Proje için yerel Git deposu başlatıldı.
-  - Hassas ve gereksiz dosyaları hariç tutmak için `.gitignore` dosyası eklendi.
-  - Proje, GitHub'daki `cinema101quiz` adlı uzak depoya başarıyla gönderildi.
+### Proje Yapısı ve Mimarisi
+- **State Management:** `provider` paketi kullanılarak uygulama genelindeki state (tema, kimlik doğrulama) yönetilir.
+- **Servis Katmanı:** `FirestoreService` sınıfı, Firestore veritabanı ile olan tüm etkileşimleri soyutlar.
+- **Modeller:** `Quiz`, `Question` gibi veri yapıları için özel model sınıfları oluşturulmuştur.
+- **Klasör Yapısı:** Kod, `auth`, `home`, `quiz` gibi özelliklere göre modüler bir şekilde organize edilmiştir.
 
-## Stil ve Tasarım Notları
+### Kullanıcı Arayüzü ve Tasarım
+- **Tema:** `Material 3` kullanılarak modern bir tasarım benimsenmiştir. `ColorScheme.fromSeed` ile ana bir renkten (mor) türetilmiş açık ve koyu temalar bulunur.
+- **Yazı Tipleri:** `google_fonts` paketi ile `Oswald` ve `Roboto` gibi özel fontlar kullanılarak tipografi zenginleştirilmiştir.
+- **Görsel Bileşenler:**
+  - Ana sayfada quizleri listeleyen kartlar (`QuizCard`).
+  - Quiz başlangıcını gösteren bir giriş ekranı (`QuizIntro`).
+  - Soruları ve cevap seçeneklerini gösteren interaktif bir arayüz (`QuestionDisplay`).
+  - Quiz sonunda skoru ve cevapları gösteren bir sonuç ekranı (`QuizResults`).
+  - Yan menü (`HomeDrawer`) ile tema değiştirme ve çıkış yapma işlevleri.
+- **Animasyonlar:** `AnimatedSwitcher` ile ekran geçişlerinde yumuşak bir animasyon sağlanır. `LinearProgressIndicator` ile quiz ilerlemesi gösterilir.
 
-- Henüz özel bir tasarım veya tema uygulanmadı.
-- Varsayılan Flutter Material Design bileşenleri kullanılıyor.
+### Özellikler
+- **Firebase Entegrasyonu:**
+  - **Firestore:** Quizler ve sorular veritabanında saklanır.
+  - **Firebase Auth:** Google ile kimlik doğrulama desteği (henüz tam entegre edilmedi).
+- **Quiz İşlevselliği:**
+  - Quizleri listeleme.
+  - Bir quizi seçip başlatma.
+  - Soruları cevaplama.
+  - Cevapların doğruluğunu anında görsel geri bildirimle (renk değişimi) görme.
+  - Quiz sonunda toplam skoru görme.
+  - Quizi yeniden başlatma.
+- **Tema Yönetimi:** Kullanıcı, uygulama içinde açık ve koyu mod arasında geçiş yapabilir.
 
-## Sonraki Adımlar İçin Plan
+## Mevcut Değişiklik Planı ve Adımları (Tamamlandı)
 
-1.  **Görsel Arayüz (UI) Tasarımı:**
-    - Uygulama için modern ve çekici bir tema oluşturulacak (renk paleti, tipografi).
-    - Ana ekran, quiz ekranı ve sonuç ekranı gibi temel sayfaların arayüzleri tasarlanacak.
-2.  **Temel Navigasyon:**
-    - Sayfalar arası geçişi yönetmek için bir yönlendirme (routing) çözümü (örn. `go_router`) eklenecek.
-3.  **Quiz Mantığı:**
-    - Soru ve cevapları yönetecek veri modelleri (`Question`, `Answer`) oluşturulacak.
-    - Kullanıcının cevaplarını kontrol edecek ve skoru hesaplayacak temel bir quiz motoru geliştirilecek.
-4.  **Veri Kaynağı:**
-    - Başlangıçta, sorular ve cevaplar doğrudan kod içindeki bir listede (`List<Question>`) tutulacak.
-    - İlerleyen aşamalarda soruları Firebase Firestore'dan çekmek için altyapı hazırlanacak.
+Bu geliştirme oturumunda, "The getter 'questions' isn't defined for the type 'Quiz'" hatasının çözülmesi ve kod kalitesinin artırılması hedeflenmiştir.
+
+**Plan:**
+1.  **Hata Analizi:** Ana hatanın, `Quiz` modelinin `questions` listesini içermemesinden ve `FirestoreService`'in bu listeyi yüklememesinden kaynaklandığını tespit et.
+2.  **Model Güncellemesi:** `lib/quiz/models/quiz_model.dart` dosyasındaki `Quiz` sınıfına `List<Question> questions` alanını ekle.
+3.  **Servis Güncellemesi:** `lib/quiz/services/firestore_service.dart` dosyasındaki `getQuizById` fonksiyonunu, quiz'in ana verileriyle birlikte "quiz_questions" koleksiyonundan ilgili soruları da çekecek ve tam bir `Quiz` nesnesi oluşturacak şekilde güncelle.
+4.  **Kod Analizi ve Linting:** Kod analizi yaparak ortaya çıkan linter uyarılarını (özellikle `use_build_context_synchronously` ve `deprecated_member_use`) tespit et.
+5.  **Kritik Uyarıları Düzeltme:**
+    - `quiz_screen.dart` ve `home_drawer.dart` dosyalarında, asenkron işlemlerden sonra `BuildContext` kullanmadan önce `mounted` kontrolü ekleyerek `use_build_context_synchronously` uyarısını çöz.
+    - `home_drawer.dart` widget'ını `StatefulWidget`'a dönüştürerek ve `Navigator`'ı asenkron işlem öncesi değişkene atayarak bu hatayı kalıcı olarak düzelt.
+    - `question_display.dart` dosyasında eski `withOpacity` ve `MaterialStateProperty` kullanımlarını, önerilen `withAlpha` ve `WidgetStateProperty` ile değiştir.
+6.  **Doğrulama:** Tüm düzeltmelerden sonra son bir kod analizi yaparak projede kritik hata veya uyarı kalmadığını doğrula.
+
+**Sonuç:** Belirtilen adımlar başarıyla tamamlanmış, ana hata ve ilgili tüm kritik uyarılar giderilmiştir. Uygulama artık kararlı ve çalışır durumdadır.

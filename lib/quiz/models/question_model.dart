@@ -1,11 +1,6 @@
 
-// Bu dosya, bir sınav sorusunu temsil eden Question modelini içerir.
-// Firestore'daki 'quiz_questions' koleksiyonundaki her bir belge bu modele karşılık gelir.
-
-
-
 class Question {
-  final String id; // Firestore'daki belge ID'si
+  final String id;
   final String quizId;
   final String questionText;
   final List<String> options;
@@ -19,15 +14,13 @@ class Question {
     required this.correctOptionIndex,
   });
 
-  // Firestore'dan gelen veriyi Question nesnesine dönüştüren factory constructor.
-  factory Question.fromFirestore(String documentId, Map<String, dynamic> data) {
+  factory Question.fromMap(Map<String, dynamic> map, String id) {
     return Question(
-      id: documentId,
-      quizId: data['quiz_id'] ?? '',
-      questionText: data['question_text'] ?? 'Soru metni bulunamadı',
-      // Firestore'dan gelen List<dynamic> türünü List<String>'e çeviriyoruz.
-      options: List<String>.from(data['options'] ?? []),
-      correctOptionIndex: data['correct_option_index'] ?? 0,
+      id: id,
+      quizId: map['quizId'] ?? '',
+      questionText: map['questionText'] ?? '',
+      options: List<String>.from(map['options'] ?? []),
+      correctOptionIndex: map['correctOptionIndex'] ?? 0,
     );
   }
 }
