@@ -1,12 +1,16 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/login/providers/auth_provider.dart';
+import 'package:myapp/admin/screens/add_quiz_screen.dart';
 
+import 'package:myapp/login/providers/auth_provider.dart';
 import 'package:myapp/main.dart';
 import 'package:provider/provider.dart';
 
 class HomeDrawer extends StatefulWidget {
-  const HomeDrawer({super.key});
+  // HomeScreen'deki listeyi yenilemek için bir callback fonksiyonu
+  final VoidCallback onQuizAdded;
+
+  const HomeDrawer({super.key, required this.onQuizAdded});
 
   @override
   State<HomeDrawer> createState() => _HomeDrawerState();
@@ -39,6 +43,24 @@ class _HomeDrawerState extends State<HomeDrawer> {
             title: const Text('Quizler'),
             onTap: () {
               Navigator.pop(context); // Menüyü kapat
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.add_circle_outline),
+            title: const Text('Yeni Quiz Ekle'),
+            onTap: () async {
+              Navigator.pop(context); // Önce menüyü kapat
+              
+              // AddQuizScreen'e git ve sonucunu bekle
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AddQuizScreen()),
+              );
+
+              // Eğer sonuç true ise (yani quiz eklendi ise), callback'i çalıştır
+              if (result == true) {
+                widget.onQuizAdded();
+              }
             },
           ),
           const Divider(),

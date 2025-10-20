@@ -27,29 +27,50 @@ Bu proje, kullanıcılara çeşitli konularda quizler sunan bir Flutter uygulama
 ### Özellikler
 - **Firebase Entegrasyonu:**
   - **Firestore:** Quizler ve sorular veritabanında saklanır.
-  - **Firebase Auth:** Google ile kimlik doğrulama desteği (henüz tam entegre edilmedi).
+  - **Firebase Auth:** Google ile kimlik doğrulama desteği.
 - **Quiz İşlevselliği:**
   - Quizleri listeleme.
   - Bir quizi seçip başlatma.
-  - Soruları cevaplama.
-  - Cevapların doğruluğunu anında görsel geri bildirimle (renk değişimi) görme.
-  - Quiz sonunda toplam skoru görme.
-  - Quizi yeniden başlatma.
-- **Tema Yönetimi:** Kullanıcı, uygulama içinde açık ve koyu mod arasında geçiş yapabilir.
+  - Soruları cevaplama ve anında geri bildirim alma.
+  - Quiz sonunda skoru görme ve yeniden başlatma.
+- **Tema Yönetimi:** Uygulama içinde açık ve koyu mod arasında geçiş yapabilme.
 
-## Mevcut Değişiklik Planı ve Adımları (Tamamlandı)
+## Mevcut Değişiklik Planı ve Adımları
 
-Bu geliştirme oturumunda, "The getter 'questions' isn't defined for the type 'Quiz'" hatasının çözülmesi ve kod kalitesinin artırılması hedeflenmiştir.
+Bu geliştirme oturumunda, uygulamaya iki yeni ana özellik eklenecektir: "Admin için Quiz Ekleme Ekranı" ve "Quiz Arama Ekranı".
 
-**Plan:**
-1.  **Hata Analizi:** Ana hatanın, `Quiz` modelinin `questions` listesini içermemesinden ve `FirestoreService`'in bu listeyi yüklememesinden kaynaklandığını tespit et.
-2.  **Model Güncellemesi:** `lib/quiz/models/quiz_model.dart` dosyasındaki `Quiz` sınıfına `List<Question> questions` alanını ekle.
-3.  **Servis Güncellemesi:** `lib/quiz/services/firestore_service.dart` dosyasındaki `getQuizById` fonksiyonunu, quiz'in ana verileriyle birlikte "quiz_questions" koleksiyonundan ilgili soruları da çekecek ve tam bir `Quiz` nesnesi oluşturacak şekilde güncelle.
-4.  **Kod Analizi ve Linting:** Kod analizi yaparak ortaya çıkan linter uyarılarını (özellikle `use_build_context_synchronously` ve `deprecated_member_use`) tespit et.
-5.  **Kritik Uyarıları Düzeltme:**
-    - `quiz_screen.dart` ve `home_drawer.dart` dosyalarında, asenkron işlemlerden sonra `BuildContext` kullanmadan önce `mounted` kontrolü ekleyerek `use_build_context_synchronously` uyarısını çöz.
-    - `home_drawer.dart` widget'ını `StatefulWidget`'a dönüştürerek ve `Navigator`'ı asenkron işlem öncesi değişkene atayarak bu hatayı kalıcı olarak düzelt.
-    - `question_display.dart` dosyasında eski `withOpacity` ve `MaterialStateProperty` kullanımlarını, önerilen `withAlpha` ve `WidgetStateProperty` ile değiştir.
-6.  **Doğrulama:** Tüm düzeltmelerden sonra son bir kod analizi yaparak projede kritik hata veya uyarı kalmadığını doğrula.
+### 1. Admin için Quiz Ekleme Ekranı
 
-**Sonuç:** Belirtilen adımlar başarıyla tamamlanmış, ana hata ve ilgili tüm kritik uyarılar giderilmiştir. Uygulama artık kararlı ve çalışır durumdadır.
+**Amaç:** Yöneticilerin (geliştirme aşamasında tüm kullanıcıların) uygulama içine yeni quizler ve soruları toplu halde ekleyebilmesi için bir arayüz oluşturmak.
+
+**Adımlar:**
+1.  **Yeni Ekran Oluşturma:** `lib/admin/screens/add_quiz_screen.dart` adında yeni bir dosya ve `StatefulWidget` oluşturulacak.
+2.  **UI Tasarımı:**
+    *   Quiz başlığı, açıklaması ve resim URL'si için `TextField`'lar eklenecek.
+    *   Dinamik olarak soru ve cevap eklemek için bir arayüz tasarlanacak. Her soru için:
+        *   Soru metni için bir `TextField`.
+        *   Cevap seçenekleri için en az 4 adet `TextField`.
+        *   Doğru cevabı işaretlemek için `Radio` butonları veya `DropdownButton`.
+        *   Yeni soru eklemek için bir "Soru Ekle" butonu.
+3.  **Veri Kaydetme İşlevi:**
+    *   `FirestoreService` içinde `addQuizWithQuestions` adında yeni bir fonksiyon oluşturulacak. Bu fonksiyon, bir `Quiz` nesnesini ve ona ait `Question` listesini alacak.
+    *   Fonksiyon, verileri tek bir atomik işlemle veritabanına yazmak için Firebase `WriteBatch` kullanacak. Önce `quizzes` koleksiyonuna yeni quiz'i, ardından `questions` koleksiyonuna ilgili soruları ekleyecek.
+4.  **Navigasyon:**
+    *   `HomeDrawer`'a "Yeni Quiz Ekle" adında bir menü öğesi eklenecek ve bu öğe, kullanıcıyı `AddQuizScreen`'e yönlendirecek. Bu öğe, geliştirme süresince herkese görünür olacak.
+
+### 2. Quiz Arama Ekranı
+
+**Amaç:** Kullanıcıların, quiz başlığına veya açıklamasına göre arama yaparak istedikleri quizleri kolayca bulabilmelerini sağlamak.
+
+**Adımlar:**
+1.  **Yeni Ekran Oluşturma:** `lib/search/screens/search_screen.dart` adında yeni bir dosya ve `StatefulWidget` oluşturulacak.
+2.  **UI Tasarımı:**
+    *   Ekranın üst kısmına bir `TextField` (arama çubuğu) yerleştirilecek.
+    *   Arama sonuçları, arama çubuğunun altında `ListView` içinde `QuizCard`'lar kullanılarak gösterilecek.
+    *   Arama sonucu bulunamadığında bilgilendirici bir metin gösterilecek.
+3.  **Arama İşlevi:**
+    *   `FirestoreService` içinde `searchQuizzes(String query)` adında yeni bir fonksiyon oluşturulacak.
+    *   Bu fonksiyon, şimdilik tüm quizleri `Firestore`'dan çekecek ve istemci tarafında (client-side) filtreleme yapacak. Filtreleme, quiz `title` ve `description` alanlarının arama metnini (küçük/büyük harf duyarsız) içerip içermediğini kontrol edecek.
+    *   Kullanıcı arama çubuğuna yazdıkça arama sonuçları anlık olarak güncellenecek. (Performans için `debounce` tekniği uygulanabilir).
+4.  **Navigasyon:**
+    *   `HomeScreen`'in `AppBar`'ına bir arama ikonu (`IconButton`) eklenecek. Bu ikona tıklandığında `SearchScreen` açılacak.

@@ -6,22 +6,24 @@ class Quiz {
   final String title;
   final String description;
   final String imageUrl;
-  final List<Question> questions; // Sorular listesini ekliyoruz
+  List<Question> questions;
 
   Quiz({
     required this.id,
     required this.title,
     required this.description,
     required this.imageUrl,
-    this.questions = const [], // Varsayılan olarak boş liste atıyoruz
+    this.questions = const [], // Varsayılan olarak boş liste
   });
 
-  factory Quiz.fromMap(Map<String, dynamic> map, String id) {
+  // fromMap artık yalnızca temel alanları doldurur, soruları değil
+  factory Quiz.fromMap(Map<String, dynamic> map, String documentId) {
     return Quiz(
-      id: id,
+      id: documentId,
       title: map['title'] ?? '',
       description: map['description'] ?? '',
       imageUrl: map['imageUrl'] ?? '',
+      // questions alanı burada doldurulmaz
     );
   }
 }

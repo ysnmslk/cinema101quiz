@@ -6,35 +6,64 @@ import 'package:myapp/quiz/models/quiz_model.dart';
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  /// Tüm quizlerin temel bilgilerini (sorular hariç) getirir.
   Future<List<Quiz>> getQuizzes() async {
     var snapshot = await _db.collection('quizzes').get();
-    return snapshot.docs.map((doc) => Quiz.fromMap(doc.data(), doc.id)).toList();
+    return snapshot.docs
+        .map((doc) => Quiz.fromMap(doc.data(), doc.id))
+        .toList();
   }
 
+  /// Belirli bir quiz'i ID'sine göre, sorularıyla birlikte getirir.
   Future<Quiz?> getQuizById(String quizId) async {
-    // 1. Quiz'in ana belgesini al
     var quizDoc = await _db.collection('quizzes').doc(quizId).get();
-    if (!quizDoc.exists) {
+    if (!quizDoc.exists || quizDoc.data() == null) {
       return null;
     }
 
-    // 2. Quiz'e ait soruları al
+    // Ana quiz verisinden bir Quiz nesnesi oluştur
+    Quiz quiz = Quiz.fromMap(quizDoc.data()!, quizDoc.id);
+
+    // Ayrı bir koleksiyondan soruları getir
     var questionsSnapshot = await _db
         .collection('quiz_questions')
         .where('quizId', isEqualTo: quizId)
         .get();
 
-    List<Question> questions = questionsSnapshot.docs
-        .map((doc) => Question.fromMap(doc.data(), doc.id))
-        .toList();
+    // Soruları Quiz nesnesine ata
+    if (questionsSnapshot.docs.isNotEmpty) {
+      quiz.questions = questionsSnapshot.docs
+          .map((doc) => Question.fromMap(doc.data(), doc.id))
+          .toList();
+    }
 
-    // 3. Soruları içeren tam bir Quiz nesnesi oluştur
-    return Quiz(
-      id: quizDoc.id,
-      title: quizDoc.data()!['title'] ?? '',
-      description: quizDoc.data()!['description'] ?? '',
-      imageUrl: quizDoc.data()!['imageUrl'] ?? '',
-      questions: questions, // Soruları buraya ekliyoruz
-    );
+    return quiz;
+  }
+
+  /// Yeni bir quiz'i ve ona ait soruları bir WriteBatch işlemiyle Firestore'a ekler.
+  Future<void> addQuizWithQuestions(Quiz quiz, List<Question> questions) async {
+    WriteBatch batch = _db.batch();
+
+    // 1. Yeni bir quiz için referans oluştur ve batch'e ekle
+    DocumentReference quizRef = _db.collection('quizzes').doc();
+    batch.set(quizRef, {
+      'title': quiz.title,
+      'description': quiz.description,
+      'imageUrl': quiz.imageUrl,
+    });
+
+    // 2. Her bir soruyu, quiz'in ID'sine referans vererek batch'e ekle
+    for (var question in questions) {
+      DocumentReference questionRef = _db.collection('quiz_questions').doc();
+      batch.set(questionRef, {
+        'quizId': quizRef.id,
+        'questionText': question.questionText,
+        'options': question.options,
+        'correctOptionIndex': question.correctOptionIndex,
+      });
+    }
+
+    // 3. Batch işlemini gerçekleştir
+    await batch.commit();
   }
 }
