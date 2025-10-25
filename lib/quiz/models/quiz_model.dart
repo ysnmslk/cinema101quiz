@@ -8,6 +8,7 @@ class Option {
 
   Option({required this.text, this.isCorrect = false});
 
+  // Firestore'a yazmak için Map'e dönüştürür
   Map<String, dynamic> toMap() {
     return {
       'text': text,
@@ -15,6 +16,7 @@ class Option {
     };
   }
 
+  // Firestore'dan okumak için Map'ten nesne oluşturur
   factory Option.fromMap(Map<String, dynamic> map) {
     return Option(
       text: map['text'] ?? '',
@@ -26,28 +28,27 @@ class Option {
 // --- Question (Soru) Modeli ---
 class Question {
   final String id;
-  String text; // questionText değil, sadece text
+  String text;
   List<Option> options;
-  int correctAnswerIndex;
+  int correctAnswerIndex; 
 
   Question({
-    required this.id,
+    this.id = '', // ID başlangıçta boş olabilir
     required this.text,
     required this.options,
     required this.correctAnswerIndex,
   });
 
+  // Firestore'a yazmak için Map'e dönüştürür
   Map<String, dynamic> toMap() {
     // Doğru cevap indeksine göre seçeneklerin isCorrect alanını ayarla
     for (int i = 0; i < options.length; i++) {
       options[i].isCorrect = (i == correctAnswerIndex);
     }
     return {
-      'id': id,
-      'text': text, // Standart alan adı: text
+      // 'id' alanını Map'e dahil ETMİYORUZ, çünkü bu sub-collection'da anlamsızdır.
+      'text': text,
       'options': options.map((opt) => opt.toMap()).toList(),
-      // Not: correctAnswerIndex'i doğrudan kaydetmiyoruz,
-      // çünkü bu bilgi options listesindeki isCorrect alanında zaten mevcut.
     };
   }
 
@@ -57,13 +58,14 @@ class Question {
         .toList();
 
     int correctIndex = optionsList.indexWhere((opt) => opt.isCorrect);
-    if (correctIndex == -1) correctIndex = 0; // Güvenlik için
-
+    
     return Question(
       id: documentId,
-      text: map['text'] ?? '', // Standart alan adı: text
+      text: map['text'] ?? '',
       options: optionsList,
-      correctAnswerIndex: correctIndex,
+      // Eğer hiçbir seçenek 'isCorrect' olarak işaretlenmemişse, -1 döner. 
+      // Bu durumu ele almak önemlidir. Genellikle bir doğrulama hatasıdır.
+      correctAnswerIndex: correctIndex, 
     );
   }
 }
@@ -80,25 +82,28 @@ class Quiz {
   List<Question> questions;
 
   Quiz({
-    required this.id,
+    this.id = '', // ID başlangıçta boş olabilir
     required this.title,
     required this.description,
     required this.imageUrl,
     required this.category,
-    required this.durationMinutes,
-    required this.totalQuestions,
+    this.durationMinutes = 0, // Varsayılan değerler ekleyelim
+    this.totalQuestions = 0,
     this.questions = const [],
   });
 
+  // Firestore'a yazmak için Map'e dönüştürür
+  // --- GÜNCELLENMİŞ KISIM --- //
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      // 'id' yi ve 'questions' listesini BURADA DAHİL ETMİYORUZ.
+      // 'id' belge adıdır, 'questions' ise bir alt koleksiyondur.
       'title': title,
       'description': description,
       'imageUrl': imageUrl,
       'category': category,
-      'durationMinutes': durationMinutes,
-      'totalQuestions': totalQuestions,
+      'durationMinutes': durationMinutes, // Artık bu alanları da ekliyoruz
+      'totalQuestions': questions.length, // Soru sayısını dinamik olarak hesapla
     };
   }
 
@@ -111,6 +116,7 @@ class Quiz {
       category: map['category'] ?? '',
       durationMinutes: map['durationMinutes'] ?? 0,
       totalQuestions: map['totalQuestions'] ?? 0,
+      // 'questions' burada yüklenmez, getQuizById gibi özel bir metotla yüklenir.
     );
   }
 }

@@ -1,13 +1,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:myapp/admin/screens/add_quiz_screen.dart';
-
 import 'package:myapp/login/providers/auth_provider.dart';
-import 'package:myapp/main.dart';
 import 'package:provider/provider.dart';
 
 class HomeDrawer extends StatefulWidget {
-  // HomeScreen'deki listeyi yenilemek için bir callback fonksiyonu
   final VoidCallback onQuizAdded;
 
   const HomeDrawer({super.key, required this.onQuizAdded});
@@ -21,7 +18,7 @@ class _HomeDrawerState extends State<HomeDrawer> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AppAuthProvider>(context);
     final user = authProvider.user;
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    // Tema ayarları artık özel bir ekranda yönetildiği için burada ThemeProvider'a gerek kalmadı.
 
     return Drawer(
       child: ListView(
@@ -51,28 +48,20 @@ class _HomeDrawerState extends State<HomeDrawer> {
             onTap: () async {
               Navigator.pop(context); // Önce menüyü kapat
               
-              // AddQuizScreen'e git ve sonucunu bekle
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const AddQuizScreen()),
               );
 
-              // Eğer sonuç true ise (yani quiz eklendi ise), callback'i çalıştır
               if (result == true) {
                 widget.onQuizAdded();
               }
             },
           ),
           const Divider(),
-          SwitchListTile(
-            title: const Text("Karanlık Mod"),
-            secondary: Icon(themeProvider.themeMode == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode),
-            value: themeProvider.themeMode == ThemeMode.dark,
-            onChanged: (value) {
-              themeProvider.toggleTheme();
-            },
-          ),
-          const Divider(),
+          // --- HATA DÜZELTİLDİ ---
+          // Tema değiştirme Switch'i kaldırıldı çünkü bu işlevsellik artık 
+          // BottomNavBar'daki Ayarlar ekranından yönetiliyor.
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Çıkış Yap', style: TextStyle(color: Colors.red)),
@@ -80,6 +69,7 @@ class _HomeDrawerState extends State<HomeDrawer> {
               final navigator = Navigator.of(context);
               await authProvider.signOut();
               if (!mounted) return; 
+              // Çıkış yaptıktan sonra menüyü güvenle kapat
               navigator.pop();
             },
           ),

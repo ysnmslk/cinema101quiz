@@ -1,8 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_model.dart';
+import 'package:myapp/quiz/models/quiz_model.dart' as quiz_models;
 import 'package:myapp/quiz/services/firestore_service.dart';
-import 'package:uuid/uuid.dart';
 
 class AddQuizScreen extends StatefulWidget {
   const AddQuizScreen({super.key});
@@ -13,113 +12,132 @@ class AddQuizScreen extends StatefulWidget {
 
 class _AddQuizScreenState extends State<AddQuizScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _imageUrlController = TextEditingController();
-  // --- YENİ EKLENEN CONTROLLER'LAR ---
-  final _categoryController = TextEditingController();
-  final _durationController = TextEditingController();
+  final _firestoreService = FirestoreService();
 
-  final FirestoreService _firestoreService = FirestoreService();
-  final Uuid _uuid = const Uuid();
-  bool _isLoading = false;
+  // Quiz ana bilgileri için denetleyiciler
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _categoryController;
+  late final TextEditingController _imageUrlController;
 
-  final List<Map<String, dynamic>> _questions = [];
+  // Soruları ve seçeneklerini yönetmek için listeler
+  final List<TextEditingController> _questionControllers = [];
+  final List<List<TextEditingController>> _optionControllers = [];
+  final List<ValueNotifier<int?>> _correctOptionNotifiers = [];
 
   @override
   void initState() {
     super.initState();
+    _titleController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _categoryController = TextEditingController();
+    _imageUrlController = TextEditingController();
     _addQuestion(); // Başlangıçta bir soru ekle
-  }
-
-  void _addQuestion() {
-    setState(() {
-      _questions.add({
-        'id': _uuid.v4(),
-        'questionController': TextEditingController(),
-        'optionControllers': List.generate(4, (_) => TextEditingController()),
-        'correctOptionNotifier': ValueNotifier<int?>(null),
-      });
-    });
-  }
-
-  Future<void> _saveQuiz() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-
-      try {
-        // --- HATANIN DÜZELTİLDİĞİ KISIM --- //
-        final newQuiz = Quiz(
-          id: _uuid.v4(),
-          title: _titleController.text,
-          description: _descriptionController.text,
-          imageUrl: _imageUrlController.text,
-          category: _categoryController.text,
-          // int.tryParse ile güvenli çevrim ve ?? ile varsayılan değer ataması
-          durationMinutes: int.tryParse(_durationController.text) ?? 0,
-          totalQuestions: _questions.length,
-          questions: [], // Sorular aşağıda ayrıca işlenecek
-        );
-
-        final List<Question> questionList = [];
-        for (var questionData in _questions) {
-          final options = (questionData['optionControllers'] as List<TextEditingController>)
-              .asMap()
-              .entries
-              .map((entry) {
-                int idx = entry.key;
-                String text = entry.value.text;
-                bool isCorrect = (questionData['correctOptionNotifier'] as ValueNotifier<int?>).value == idx;
-                return Option(text: text, isCorrect: isCorrect);
-              })
-              .toList();
-
-          // --- HATALI PARAMETRELER TEMİZLENDİ ---
-          questionList.add(Question(
-            id: questionData['id'],
-            text: (questionData['questionController'] as TextEditingController).text,
-            options: options,
-            correctAnswerIndex: (questionData['correctOptionNotifier'] as ValueNotifier<int?>).value ?? 0,
-          ));
-        }
-        
-        await _firestoreService.addQuizWithQuestions(newQuiz, questionList);
-
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Quiz başarıyla kaydedildi!'), backgroundColor: Colors.green),
-        );
-        Navigator.of(context).pop(true);
-
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Bir hata oluştu: $e'), backgroundColor: Colors.red),
-        );
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
-      }
-    }
   }
 
   @override
   void dispose() {
-    // Bütün controller'ları dispose et
     _titleController.dispose();
     _descriptionController.dispose();
-    _imageUrlController.dispose();
     _categoryController.dispose();
-    _durationController.dispose();
-    for (var q in _questions) {
-      (q['questionController'] as TextEditingController).dispose();
-      for (var c in (q['optionControllers'] as List<TextEditingController>)) {
-        c.dispose();
+    _imageUrlController.dispose();
+    for (var controller in _questionControllers) {
+      controller.dispose();
+    }
+    for (var controllers in _optionControllers) {
+      for (var controller in controllers) {
+        controller.dispose();
       }
-      (q['correctOptionNotifier'] as ValueNotifier).dispose();
+    }
+    for (var notifier in _correctOptionNotifiers) {
+      notifier.dispose();
     }
     super.dispose();
+  }
+
+  void _addQuestion() {
+    setState(() {
+      _questionControllers.add(TextEditingController());
+      _optionControllers.add(
+        List.generate(4, (_) => TextEditingController()),
+      );
+      _correctOptionNotifiers.add(ValueNotifier<int?>(null));
+    });
+  }
+
+  void _removeQuestion(int index) {
+    // Formun durumunu kaybetmemek için bir sonraki frame'de silme yap
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+         if (index < _questionControllers.length) {
+            _questionControllers[index].dispose();
+            _questionControllers.removeAt(index);
+        }
+        if (index < _optionControllers.length) {
+            for (var controller in _optionControllers[index]) {
+                controller.dispose();
+            }
+            _optionControllers.removeAt(index);
+        }
+        if (index < _correctOptionNotifiers.length) {
+            _correctOptionNotifiers[index].dispose();
+            _correctOptionNotifiers.removeAt(index);
+        }
+      });
+    });
+  }
+
+
+  Future<void> _saveQuiz() async {
+    // Önce notifier'lardaki null değerleri kontrol et ve formu validate et
+    for (var notifier in _correctOptionNotifiers) {
+      if (notifier.value == null) {
+        // Bu, gizli FormField'ın validator'ını tetikleyecektir.
+        _formKey.currentState!.validate();
+        return; // Bir seçim yapılmadıysa kaydetme
+      }
+    }
+
+    if (_formKey.currentState!.validate()) {
+      final newQuiz = quiz_models.Quiz(
+        // ID'ler Firestore servisi tarafından atanacak, burada boş bırak
+        title: _titleController.text,
+        description: _descriptionController.text,
+        category: _categoryController.text,
+        imageUrl: _imageUrlController.text,
+        durationMinutes: 0, // Varsayılan değer, isterseniz bunu da bir alan yapabilirsiniz
+        questions: List.generate(_questionControllers.length, (qIndex) {
+          final correctIndex = _correctOptionNotifiers[qIndex].value!;
+          return quiz_models.Question(
+            text: _questionControllers[qIndex].text,
+            options: List.generate(4, (oIndex) {
+              return quiz_models.Option(
+                text: _optionControllers[qIndex][oIndex].text,
+                isCorrect: oIndex == correctIndex, // toMap içinde de ayarlanıyor ama burada olması daha net
+              );
+            }),
+            correctAnswerIndex: correctIndex,
+          );
+        }),
+      );
+
+      try {
+        // --- DOĞRU METOT ÇAĞRISI --- //
+        await _firestoreService.addQuiz(newQuiz);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Quiz başarıyla kaydedildi!')),
+          );
+          Navigator.of(context).pop(true);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Quiz kaydedilirken bir hata oluştu: $e')),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -127,93 +145,182 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Yeni Quiz Ekle'),
-        actions: [ _isLoading ? const Padding(padding: EdgeInsets.only(right: 16.0), child: Center(child: CircularProgressIndicator(color: Colors.white))) : IconButton(icon: const Icon(Icons.save), onPressed: _saveQuiz) ],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _saveQuiz,
+            tooltip: 'Kaydet',
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            _buildQuizDetailsSection(),
+            _buildQuizInfoSection(),
             const SizedBox(height: 24),
-            _buildQuestionsSection(),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(icon: const Icon(Icons.add), label: const Text('Yeni Soru Ekle'), onPressed: _addQuestion),
+            Text('Sorular', style: Theme.of(context).textTheme.headlineSmall),
+            const Divider(),
+            ..._buildQuestionList(),
+            const SizedBox(height: 20),
+            Center(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Soru Ekle'),
+                onPressed: _addQuestion,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildQuizDetailsSection() {
+  Widget _buildQuizInfoSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Quiz Detayları', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 16),
-        TextFormField(controller: _titleController, decoration: const InputDecoration(labelText: 'Quiz Başlığı', border: OutlineInputBorder()), validator: (v)=>(v==null||v.isEmpty)?'Başlık boş olamaz':null,),
-        const SizedBox(height: 12),
-        TextFormField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Açıklama', border: OutlineInputBorder()), validator: (v)=>(v==null||v.isEmpty)?'Açıklama boş olamaz':null,),
-        const SizedBox(height: 12),
-        // --- YENİ EKLENEN ALANLAR ---
-        TextFormField(controller: _categoryController, decoration: const InputDecoration(labelText: 'Kategori', border: OutlineInputBorder()), validator: (v)=>(v==null||v.isEmpty)?'Kategori boş olamaz':null,),
-        const SizedBox(height: 12),
-        TextFormField(controller: _durationController, decoration: const InputDecoration(labelText: 'Süre (dakika)', border: OutlineInputBorder()), keyboardType: TextInputType.number, validator: (v){ if(v==null||v.isEmpty) return 'Süre boş olamaz'; if(int.tryParse(v)==null) return 'Geçerli bir sayı girin'; return null; },),
-        const SizedBox(height: 12),
-        TextFormField(controller: _imageUrlController, decoration: const InputDecoration(labelText: 'Resim URL (Opsiyonel)', border: OutlineInputBorder())),
-      ],
-    );
-  }
-
-  Widget _buildQuestionsSection() {
-    // ... Mevcut _buildQuestionsSection metodu ...
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Sorular', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 16),
-        ListView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: _questions.length, itemBuilder: (context, index) {
-            final questionData = _questions[index];
-            return _QuestionCard(
-              questionIndex: index,
-              questionController: questionData['questionController'],
-              optionControllers: questionData['optionControllers'],
-              correctOptionNotifier: questionData['correctOptionNotifier'],
-            );
-          },
+        TextFormField(
+          controller: _titleController,
+          decoration: const InputDecoration(labelText: 'Quiz Başlığı'),
+          validator: (v) => (v == null || v.isEmpty) ? 'Başlık boş olamaz' : null,
+        ),
+        TextFormField(
+          controller: _descriptionController,
+          decoration: const InputDecoration(labelText: 'Açıklama'),
+          validator: (v) => (v == null || v.isEmpty) ? 'Açıklama boş olamaz' : null,
+        ),
+        TextFormField(
+          controller: _categoryController,
+          decoration: const InputDecoration(labelText: 'Kategori (Örn: Film, Bilim)'),
+          validator: (v) => (v == null || v.isEmpty) ? 'Kategori boş olamaz' : null,
+        ),
+        TextFormField(
+          controller: _imageUrlController,
+          decoration: const InputDecoration(labelText: 'Görsel URL (opsiyonel)'),
         ),
       ],
     );
   }
+
+  List<Widget> _buildQuestionList() {
+    return List.generate(_questionControllers.length, (index) {
+      return _QuestionCard(
+        key: ObjectKey(_questionControllers[index]), // Stabil key
+        questionIndex: index,
+        questionController: _questionControllers[index],
+        optionControllers: _optionControllers[index],
+        correctOptionNotifier: _correctOptionNotifiers[index],
+        onRemove: () => _removeQuestion(index),
+      );
+    });
+  }
 }
 
-class _QuestionCard extends StatefulWidget {
-  // ... Mevcut _QuestionCard ...
-  final int questionIndex; final TextEditingController questionController; final List<TextEditingController> optionControllers; final ValueNotifier<int?> correctOptionNotifier;
-  const _QuestionCard({required this.questionIndex, required this.questionController, required this.optionControllers, required this.correctOptionNotifier});
-  @override
-  State<_QuestionCard> createState() => _QuestionCardState();
-}
+class _QuestionCard extends StatelessWidget {
+  final int questionIndex;
+  final TextEditingController questionController;
+  final List<TextEditingController> optionControllers;
+  final ValueNotifier<int?> correctOptionNotifier;
+  final VoidCallback onRemove;
 
-class _QuestionCardState extends State<_QuestionCard> {
-  // ... Mevcut _QuestionCardState ...
-  int? _groupValue;
+  const _QuestionCard({
+    super.key,
+    required this.questionIndex,
+    required this.questionController,
+    required this.optionControllers,
+    required this.correctOptionNotifier,
+    required this.onRemove,
+  });
+
   @override
-  void initState(){super.initState();_groupValue=widget.correctOptionNotifier.value;}
-  @override
-  Widget build(BuildContext context){
-    return Card(margin:const EdgeInsets.symmetric(vertical:12),child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      Text('Soru ${widget.questionIndex+1}',style:Theme.of(context).textTheme.titleLarge),
-      TextFormField(controller:widget.questionController,decoration:const InputDecoration(labelText:'Soru Metni'),validator:(v)=>(v==null||v.isEmpty)?'Soru boş olamaz':null,),
-      const SizedBox(height:16),
-      Text('Cevap Seçenekleri',style:Theme.of(context).textTheme.titleMedium),
-      ...List.generate(4,(optionIndex){
-        return Row(children:[
-          Radio<int>(value:optionIndex,groupValue:_groupValue,onChanged:(value){setState((){_groupValue=value;});widget.correctOptionNotifier.value=value;},),
-          Expanded(child:TextFormField(controller:widget.optionControllers[optionIndex],decoration:InputDecoration(labelText:'Seçenek ${optionIndex+1}'),validator:(v)=>(v==null||v.isEmpty)?'Boş olamaz':null,),),
-        ]);
-      }),
-      FormField<int>(builder:(state){if(widget.correctOptionNotifier.value==null&&state.hasError){return Padding(padding:const EdgeInsets.only(top:8),child:Text(state.errorText??'',style:TextStyle(color:Theme.of(context).colorScheme.error,fontSize:12),),);}return const SizedBox.shrink();},validator:(_){return widget.correctOptionNotifier.value==null?'Doğru cevabı seçin.':null;},),
-    ])));
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Soru ${questionIndex + 1}', style: Theme.of(context).textTheme.titleLarge),
+                 // Silme butonunu her zaman göster ama ilk soru için devre dışı bırak
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: onRemove,
+                ),
+              ],
+            ),
+            TextFormField(
+              controller: questionController,
+              decoration: const InputDecoration(labelText: 'Soru Metni'),
+              validator: (v) => (v == null || v.isEmpty) ? 'Soru boş olamaz' : null,
+            ),
+            const SizedBox(height: 16),
+            Text('Cevap Seçenekleri (Doğru olanı işaretleyin)', style: Theme.of(context).textTheme.titleMedium),
+            ValueListenableBuilder<int?>(
+              valueListenable: correctOptionNotifier,
+              builder: (context, groupValue, child) {
+                return Column(
+                  children: List.generate(4, (optionIndex) {
+                    return Row(
+                      children: [
+                        Radio<int>(
+                          value: optionIndex,
+                          // ignore: deprecated_member_use
+                          groupValue: groupValue,
+                          // ignore: deprecated_member_use
+                          onChanged: (value) {
+                            correctOptionNotifier.value = value;
+                          },
+                        ),
+                        Expanded(
+                          child: TextFormField(
+                            controller: optionControllers[optionIndex],
+                            decoration: InputDecoration(labelText: 'Seçenek ${optionIndex + 1}'),
+                            validator: (v) => (v == null || v.isEmpty) ? 'Seçenek boş olamaz' : null,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                );
+              },
+            ),
+            
+            // --- HATANIN ÇÖZÜLDÜĞÜ YER --- //
+            // FormField artık null olabilen bir int (int?) bekliyor.
+            FormField<int?>(
+              // notifier değiştikçe yeniden doğrulama yapması için key
+              key: ValueKey('formfield_validator_$questionIndex'),
+              initialValue: correctOptionNotifier.value, // başlangıç değeri
+              validator: (value) {
+                // Değer null ise hata mesajı döndür
+                if (correctOptionNotifier.value == null) {
+                  return 'Lütfen bu soru için doğru cevabı seçin.';
+                }
+                return null; // Her şey yolundaysa null döndür
+              },
+              builder: (state) {
+                // Hata varsa, metni göster
+                if (state.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      state.errorText!,
+                      style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink(); // Hata yoksa boşluk göster
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

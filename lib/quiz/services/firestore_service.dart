@@ -37,23 +37,27 @@ class FirestoreService {
     return quiz;
   }
 
-  /// Yeni bir quiz'i ve ona ait soruları standart toMap metotlarını kullanarak ekler.
-  Future<void> addQuizWithQuestions(Quiz quiz, List<Question> questions) async {
+  // --- YENİ VE DOĞRU METOT --- //
+  /// Yeni bir quiz'i ve ona ait soruları Firestore'a ekler.
+  /// ID'leri otomatik olarak oluşturur.
+  Future<void> addQuiz(Quiz quiz) async {
     WriteBatch batch = _db.batch();
 
-    // 1. Quiz belgesini oluştur.
-    DocumentReference quizRef = _db.collection('quizzes').doc(quiz.id);
-    // Standart toMap() metodunu kullan, alan adlarını manuel yazma.
+    // 1. Ana quiz belgesi için yeni bir ID oluştur.
+    DocumentReference quizRef = _db.collection('quizzes').doc(); // Otomatik ID
+    
+    // Quiz nesnesinin toMap() metodunu kullanarak veriyi hazırla.
+    // Bu metot, question.length'i kullanarak totalQuestions'ı otomatik olarak ayarlar.
     batch.set(quizRef, quiz.toMap());
 
-    // 2. Her soruyu, quiz'in altında bir alt koleksiyona ekle.
-    for (var question in questions) {
-      DocumentReference questionRef = quizRef.collection('questions').doc(question.id);
-      // Standart question.toMap() metodunu kullan.
+    // 2. Her bir soruyu, yeni oluşturulan quiz'in altındaki 'questions' koleksiyonuna ekle.
+    for (var question in quiz.questions) {
+       // Her soru için yeni bir ID oluştur.
+      DocumentReference questionRef = quizRef.collection('questions').doc(); // Otomatik ID
       batch.set(questionRef, question.toMap());
     }
 
-    // 3. Tüm işlemleri tek seferde gerçekleştir.
+    // 3. Tüm işlemleri tek bir atomik operasyonla Firestore'a gönder.
     await batch.commit();
   }
 }

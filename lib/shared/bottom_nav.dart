@@ -1,36 +1,43 @@
 
 import 'package:flutter/material.dart';
+import 'package:myapp/settings/screens/settings_screen.dart'; // Ayarlar ekranını import et
 
 class BottomNavBar extends StatelessWidget {
-  final int currentIndex; // Hangi sayfanın aktif olduğunu belirtmek için
+  final int currentIndex;
 
   const BottomNavBar({super.key, required this.currentIndex});
 
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
-      currentIndex: currentIndex, // Aktif indeksi ayarla
+      currentIndex: currentIndex,
       onTap: (index) {
-        // Henüz diğer sayfalar olmadığı için sadece sayfa geçişlerini simüle ediyoruz
+        // Eğer zaten o sekmedeysek bir şey yapma
+        if (index == currentIndex) return;
+
         switch (index) {
           case 0:
-            // Zaten ana sayfadayız, bir şey yapma veya sayfayı yenile
-            if (ModalRoute.of(context)!.settings.name != '/home') {
-              Navigator.pushReplacementNamed(context, '/home');
-            }
+            // Ana sayfaya git (eğer zaten orada değilsek)
+            if (ModalRoute.of(context)?.settings.name != '/') {
+               // Ana ekran yığının en altında olmalı, bu yüzden pushReplacementNamed daha uygun
+               // Ancak basitlik için şimdilik Navigator.popUntil kullanabiliriz veya doğrudan ana sayfaya dönebiliriz.
+               // Şimdilik varsayılan davranışı koruyalım.
+               Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+            } 
             break;
           case 1:
             // Profil sayfasına git (henüz oluşturulmadı)
-            // Navigator.pushReplacementNamed(context, '/profile');
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Profil sayfası henüz hazır değil.')),
             );
             break;
+            
+          // --- DEĞİŞİKLİĞİN YAPILDIĞI YER ---
           case 2:
-            // Ayarlar sayfasına git (henüz oluşturulmadı)
-            // Navigator.pushReplacementNamed(context, '/settings');
-             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ayarlar sayfası henüz hazır değil.')),
+            // Ayarlar sayfasına git
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsScreen()),
             );
             break;
         }
@@ -49,9 +56,9 @@ class BottomNavBar extends StatelessWidget {
           label: 'Ayarlar',
         ),
       ],
-      // Seçili ve seçili olmayan ikonların renklerini belirleyebilirsiniz
-      selectedItemColor: Theme.of(context).primaryColor,
+      selectedItemColor: Theme.of(context).colorScheme.primary,
       unselectedItemColor: Colors.grey,
+      showUnselectedLabels: true, // Tüm etiketleri göster
     );
   }
 }
