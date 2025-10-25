@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/question_model.dart';
+// --- DOĞRU IMPORT --- //
+// Artık Question, Option gibi tüm modeller bu tek dosyadan geliyor.
+import 'package:myapp/quiz/models/quiz_model.dart';
 
 class QuestionDisplay extends StatelessWidget {
   final Question question;
@@ -33,8 +35,9 @@ class QuestionDisplay extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
+          // --- ALAN ADI GÜNCELLENDİ ---
           Text(
-            question.questionText,
+            question.text, // 'questionText' yerine 'text'
             style: Theme.of(context).textTheme.headlineSmall,
             textAlign: TextAlign.center,
           ),
@@ -47,35 +50,53 @@ class QuestionDisplay extends StatelessWidget {
 
   List<Widget> _buildAnswerOptions(BuildContext context) {
     return List.generate(question.options.length, (index) {
+      final option = question.options[index];
       final isSelected = index == selectedAnswerIndex;
-      final isCorrect = index == question.correctOptionIndex;
+      // --- KONTROL GÜNCELLENDİ ---
+      // Doğru olup olmadığını artık Option nesnesinin kendisinden öğreniyoruz.
+      final bool isCorrect = option.isCorrect;
 
-      Color getButtonColor() {
+      Color? getButtonColor() {
         if (!isAnswered) return Theme.of(context).colorScheme.primary;
         if (isSelected) {
           return isCorrect ? Colors.green : Colors.red;
         } else if (isCorrect) {
+          // Kullanıcı seçmedi ama doğru cevap buysa hafifçe belirt
           return Colors.green.withAlpha(150);
         }
-        return Colors.grey;
+        // Alakasız ve yanlış seçenekler
+        return Colors.grey[800];
+      }
+
+      Icon? getIcon() {
+        if (!isAnswered) return null;
+        if (isSelected) {
+          return isCorrect ? const Icon(Icons.check_circle) : const Icon(Icons.cancel);
+        } else if (isCorrect) {
+          return const Icon(Icons.check_circle_outline);
+        }
+        return null;
       }
 
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: ElevatedButton(
+        child: ElevatedButton.icon(
+          icon: getIcon() ?? const SizedBox(width: 24), // İkon yoksa boşluk bırak
           onPressed: isAnswered ? null : () => onAnswerSelected(index),
           style: ElevatedButton.styleFrom(
             backgroundColor: getButtonColor(),
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            textStyle: const TextStyle(fontSize: 18),
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            alignment: Alignment.centerLeft, // Metni ve ikonu sola yasla
           ).copyWith(
             elevation: WidgetStateProperty.all(isAnswered && isSelected ? 8 : 4),
           ),
-          child: Text(question.options[index]),
+          // --- TEXT GÜNCELLENDİ ---
+          label: Text(option.text), // Option nesnesinin metnini kullan
         ),
       );
     });

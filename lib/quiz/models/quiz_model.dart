@@ -1,14 +1,82 @@
 
-import 'package:myapp/quiz/models/question_model.dart';
 
+
+// --- Option (Seçenek) Modeli ---
+class Option {
+  String text;
+  bool isCorrect;
+
+  Option({required this.text, this.isCorrect = false});
+
+  Map<String, dynamic> toMap() {
+    return {
+      'text': text,
+      'isCorrect': isCorrect,
+    };
+  }
+
+  factory Option.fromMap(Map<String, dynamic> map) {
+    return Option(
+      text: map['text'] ?? '',
+      isCorrect: map['isCorrect'] ?? false,
+    );
+  }
+}
+
+// --- Question (Soru) Modeli ---
+class Question {
+  final String id;
+  String text; // questionText değil, sadece text
+  List<Option> options;
+  int correctAnswerIndex;
+
+  Question({
+    required this.id,
+    required this.text,
+    required this.options,
+    required this.correctAnswerIndex,
+  });
+
+  Map<String, dynamic> toMap() {
+    // Doğru cevap indeksine göre seçeneklerin isCorrect alanını ayarla
+    for (int i = 0; i < options.length; i++) {
+      options[i].isCorrect = (i == correctAnswerIndex);
+    }
+    return {
+      'id': id,
+      'text': text, // Standart alan adı: text
+      'options': options.map((opt) => opt.toMap()).toList(),
+      // Not: correctAnswerIndex'i doğrudan kaydetmiyoruz,
+      // çünkü bu bilgi options listesindeki isCorrect alanında zaten mevcut.
+    };
+  }
+
+  factory Question.fromMap(Map<String, dynamic> map, String documentId) {
+    var optionsList = (map['options'] as List<dynamic>? ?? [])
+        .map((optionMap) => Option.fromMap(optionMap))
+        .toList();
+
+    int correctIndex = optionsList.indexWhere((opt) => opt.isCorrect);
+    if (correctIndex == -1) correctIndex = 0; // Güvenlik için
+
+    return Question(
+      id: documentId,
+      text: map['text'] ?? '', // Standart alan adı: text
+      options: optionsList,
+      correctAnswerIndex: correctIndex,
+    );
+  }
+}
+
+// --- Quiz Modeli ---
 class Quiz {
   final String id;
   final String title;
   final String description;
   final String imageUrl;
-  final String category;       // Yeni alan
-  final int totalQuestions;    // Yeni alan
-  final int durationMinutes;   // Yeni alan
+  final String category;
+  final int durationMinutes;
+  final int totalQuestions;
   List<Question> questions;
 
   Quiz({
@@ -16,46 +84,33 @@ class Quiz {
     required this.title,
     required this.description,
     required this.imageUrl,
-    this.category = 'Genel',
-    this.totalQuestions = 0,
-    this.durationMinutes = 0,
+    required this.category,
+    required this.durationMinutes,
+    required this.totalQuestions,
     this.questions = const [],
   });
 
-  // Firestore'dan veri okurken bu kurucu kullanılır
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'imageUrl': imageUrl,
+      'category': category,
+      'durationMinutes': durationMinutes,
+      'totalQuestions': totalQuestions,
+    };
+  }
+
   factory Quiz.fromMap(Map<String, dynamic> map, String documentId) {
     return Quiz(
       id: documentId,
       title: map['title'] ?? '',
       description: map['description'] ?? '',
       imageUrl: map['imageUrl'] ?? '',
-      // Veritabanındaki alan adlarıyla eşleştirme (farklı yazımlar olabilir)
-      category: map['category'] ?? 'Genel',
-      totalQuestions: (map['totalQuestions'] ?? map['totalquestion'] ?? 0) as int,
-      durationMinutes: (map['durationMinutes'] ?? 0) as int,
-    );
-  }
-
-  // Yeni bir quiz oluştururken kullanılan, değiştirilebilir bir kopya metodu
-  Quiz copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? imageUrl,
-    String? category,
-    int? totalQuestions,
-    int? durationMinutes,
-    List<Question>? questions,
-  }) {
-    return Quiz(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      imageUrl: imageUrl ?? this.imageUrl,
-      category: category ?? this.category,
-      totalQuestions: totalQuestions ?? this.totalQuestions,
-      durationMinutes: durationMinutes ?? this.durationMinutes,
-      questions: questions ?? this.questions,
+      category: map['category'] ?? '',
+      durationMinutes: map['durationMinutes'] ?? 0,
+      totalQuestions: map['totalQuestions'] ?? 0,
     );
   }
 }

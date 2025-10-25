@@ -1,6 +1,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+// Sadece quiz_model.dart'ı import et. Bu dosya Question ve Option'ı da içermeli.
 import 'package:myapp/quiz/models/quiz_model.dart';
 import 'package:myapp/quiz/services/firestore_service.dart';
 import 'package:myapp/quiz/widgets/question_display.dart';
@@ -34,8 +35,9 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Future<void> _loadQuiz() async {
+    // getQuizById zaten soruları da getirecek şekilde güncellenmeli
     final quiz = await _firestoreService.getQuizById(widget.quizId);
-    if (!mounted) return; 
+    if (!mounted) return;
 
     if (quiz != null) {
       setState(() {
@@ -44,7 +46,7 @@ class _QuizScreenState extends State<QuizScreen> {
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Quiz yüklenemedi!')),
+        const SnackBar(content: Text('Quiz yüklenemedi veya mevcut değil!')),
       );
       Navigator.of(context).pop();
     }
@@ -88,10 +90,13 @@ class _QuizScreenState extends State<QuizScreen> {
     _startQuiz();
   }
 
+  // --- HATANIN DÜZELTİLDİĞİ YER ---
   int _calculateScore() {
     int score = 0;
     for (int i = 0; i < _quiz!.questions.length; i++) {
-      if (_userAnswers.length > i && _userAnswers[i] == _quiz!.questions[i].correctOptionIndex) {
+      // 'correctOptionIndex' yerine 'correctAnswerIndex' kullanılıyor
+      if (_userAnswers.length > i &&
+          _userAnswers[i] == _quiz!.questions[i].correctAnswerIndex) {
         score++;
       }
     }
@@ -127,12 +132,12 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Widget _buildBody() {
     if (_quiz == null || _quizState == QuizState.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(key: ValueKey('loading'), child: CircularProgressIndicator());
     }
 
     switch (_quizState) {
       case QuizState.intro:
-        return QuizIntro(quiz: _quiz!, onStartQuiz: _startQuiz);
+        return QuizIntro(key: const ValueKey('intro'), quiz: _quiz!, onStartQuiz: _startQuiz);
       case QuizState.question:
         return QuestionDisplay(
           key: ValueKey<int>(_currentQuestionIndex),
@@ -145,6 +150,7 @@ class _QuizScreenState extends State<QuizScreen> {
         );
       case QuizState.results:
         return QuizResults(
+          key: const ValueKey('results'),
           quiz: _quiz!,
           score: _calculateScore(),
           userAnswers: _userAnswers,
