@@ -21,16 +21,13 @@ class FirestoreService {
       return null;
     }
 
-    // Ana quiz verisinden bir Quiz nesnesi oluştur
     Quiz quiz = Quiz.fromMap(quizDoc.data()!, quizDoc.id);
 
-    // Ayrı bir koleksiyondan soruları getir
     var questionsSnapshot = await _db
         .collection('quiz_questions')
         .where('quizId', isEqualTo: quizId)
         .get();
 
-    // Soruları Quiz nesnesine ata
     if (questionsSnapshot.docs.isNotEmpty) {
       quiz.questions = questionsSnapshot.docs
           .map((doc) => Question.fromMap(doc.data(), doc.id))
@@ -44,26 +41,33 @@ class FirestoreService {
   Future<void> addQuizWithQuestions(Quiz quiz, List<Question> questions) async {
     WriteBatch batch = _db.batch();
 
-    // 1. Yeni bir quiz için referans oluştur ve batch'e ekle
-    DocumentReference quizRef = _db.collection('quizzes').doc();
+    // 1. Yeni bir quiz belgesi için referans oluştur ve ana bilgileri batch'e ekle
+    DocumentReference quizRef = _db.collection('quizzes').doc(quiz.id);
     batch.set(quizRef, {
+      'id': quiz.id,
       'title': quiz.title,
       'description': quiz.description,
       'imageUrl': quiz.imageUrl,
+      'category': quiz.category,
+      'durationMinutes': quiz.durationMinutes,
+      'totalQuestions': quiz.totalQuestions,
+      // Not: totalquestion alanı eski veriyle uyum için eklenebilir ama yeni standart totalQuestions olmalı
+      'totalquestion': quiz.totalQuestions, 
     });
 
-    // 2. Her bir soruyu, quiz'in ID'sine referans vererek batch'e ekle
+    // 2. Her bir soruyu, quiz'in ID'sine referans vererek ayrı bir koleksiyona ekle
     for (var question in questions) {
-      DocumentReference questionRef = _db.collection('quiz_questions').doc();
+      DocumentReference questionRef = _db.collection('quiz_questions').doc(question.id);
       batch.set(questionRef, {
-        'quizId': quizRef.id,
+        'id': question.id,
+        'quizId': quizRef.id, // Oluşturulan quiz'in ID'sini referans olarak ata
         'questionText': question.questionText,
         'options': question.options,
         'correctOptionIndex': question.correctOptionIndex,
       });
     }
 
-    // 3. Batch işlemini gerçekleştir
+    // 3. Tüm işlemleri tek seferde gerçekleştir
     await batch.commit();
   }
 }
