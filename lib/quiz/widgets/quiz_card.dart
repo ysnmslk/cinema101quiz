@@ -15,35 +15,26 @@ class QuizCard extends StatelessWidget {
       String pureBase64 = base64String.split(',').last;
       return base64Decode(pureBase64);
     } catch (e) {
-      
       return Uint8List(0);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // --- Dinamik Yazı Tipi Boyutu İçin --- //
-    final screenWidth = MediaQuery.of(context).size.width;
-    
-    // Ekran genişliğine göre temel bir oran belirleyelim
-    // Bu oranları projenizin tasarımına göre daha da hassaslaştırabilirsiniz
-    double titleFontSize = screenWidth * 0.045; // Genişliğin %4.5'i
-    double descriptionFontSize = screenWidth * 0.035; // Genişliğin %3.5'i
-
-    // Çok büyük veya çok küçük olmasını engellemek için sınırlar koyalım
-    titleFontSize = titleFontSize.clamp(14.0, 20.0); // Min 14, Max 20
-    descriptionFontSize = descriptionFontSize.clamp(12.0, 16.0); // Min 12, Max 16
-    // ------------------------------------ //
-
     Widget imageWidget;
     if (quiz.imageUrl.startsWith('data:image')) {
       final imageBytes = _decodeBase64(quiz.imageUrl);
       imageWidget = imageBytes.isNotEmpty
-          ? Image.memory(imageBytes, fit: BoxFit.cover)
+          ? Image.memory(
+              imageBytes, 
+              width: double.infinity,
+              fit: BoxFit.cover, 
+            )
           : _buildErrorImage();
     } else {
       imageWidget = Image.network(
         quiz.imageUrl,
+        width: double.infinity,
         fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
@@ -68,41 +59,42 @@ class QuizCard extends StatelessWidget {
             ),
           );
         },
+        // --- DEĞİŞİKLİĞİN YAPILDIĞI YER ---
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Sütun yüksekliğini içeriğine göre ayarla
           children: [
-            Expanded(
-              flex: 3,
+            // Resim 16:9 oranını koruyacak
+            AspectRatio(
+              aspectRatio: 16 / 9,
               child: imageWidget,
             ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Text(
-                      quiz.title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: titleFontSize, // Dinamik boyut
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+            // Metin alanı
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    quiz.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                    Text(
-                      quiz.description,
-                      style: TextStyle(
-                        fontSize: descriptionFontSize, // Dinamik boyut
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    quiz.description,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
                     ),
-                  ],
-                ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
           ],
@@ -117,7 +109,7 @@ class QuizCard extends StatelessWidget {
       child: const Center(
         child: Icon(
           Icons.quiz_outlined,
-          size: 50,
+          size: 40,
           color: Colors.grey,
         ),
       ),

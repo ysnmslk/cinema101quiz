@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/admin/screens/add_quiz_screen.dart'; // Admin panelindeki doğru yolu kullanın
+import 'package:myapp/admin/screens/add_quiz_screen.dart';
 import 'package:myapp/quiz/models/quiz_model.dart';
 import 'package:myapp/quiz/services/firestore_service.dart';
 import 'package:myapp/quiz/widgets/quiz_card.dart';
@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadQuizzes() async {
-    if (!mounted) return; // Widget ağaçta değilse işlem yapma
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
@@ -38,7 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
-      // Hata yönetimi (opsiyonel)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Quizler yüklenirken bir hata oluştu: $e')),
@@ -53,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Arama sorgusuna göre filtrelenmiş quiz listesi
   List<Quiz> get _filteredQuizzes {
     if (_searchQuery.isEmpty) {
       return _quizzes;
@@ -65,20 +63,14 @@ class _HomeScreenState extends State<HomeScreen> {
         .toList();
   }
 
-  // --- HATANIN DÜZELTİLDİĞİ YER ---
   Future<void> _navigateToAddQuiz() async {
-    // Navigator.push'tan dönen sonucu bekle
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        // Artık onQuizAdded parametresi yok, sadece widget'ı çağırıyoruz
         builder: (context) => const AddQuizScreen(),
       ),
     );
-
-    // Eğer AddQuizScreen'den 'true' sonucu döndüyse (yani kayıt başarılıysa)
     if (result == true) {
-      // Quiz listesini yeniden yükle
       _loadQuizzes();
     }
   }
@@ -91,7 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            // Güncellenmiş navigasyon fonksiyonunu çağır
             onPressed: _navigateToAddQuiz,
           ),
           IconButton(
@@ -101,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadQuizzes, // Aşağı çekerek yenileme özelliği
+        onRefresh: _loadQuizzes,
         child: Column(
           children: [
             Padding(
@@ -130,14 +121,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       : LayoutBuilder(
                           builder: (context, constraints) {
-                            int crossAxisCount = (constraints.maxWidth / 200).floor();
+                            int crossAxisCount = (constraints.maxWidth / 180).floor();
+                            // --- DEĞİŞİKLİĞİN YAPILDIĞI YER ---
                             return GridView.builder(
                               padding: const EdgeInsets.all(8.0),
                               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: crossAxisCount > 0 ? crossAxisCount : 1,
                                 crossAxisSpacing: 10.0,
                                 mainAxisSpacing: 10.0,
-                                childAspectRatio: 0.75,
+                                // childAspectRatio kaldırıldı, yerine mainAxisExtent kullanıldı.
+                                mainAxisExtent: 250, // Her bir kart için sabit yükseklik
                               ),
                               itemCount: _filteredQuizzes.length,
                               itemBuilder: (context, index) {
