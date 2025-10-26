@@ -2,19 +2,16 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:myapp/firebase_options.dart';
-import 'package:myapp/login/providers/auth_provider.dart';
-import 'package:myapp/login/widgets/auth_wrapper.dart';
 import 'package:provider/provider.dart';
+import 'firebase_options.dart';
+import 'home/screens/home_screen.dart';
 
-// --- GÜNCELLENMİŞ THEMEPROVIDER --- //
 // Tema durumunu yönetmek için ThemeProvider sınıfı
 class ThemeProvider with ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
 
   ThemeMode get themeMode => _themeMode;
 
-  // Artık belirli bir tema modunu ayarlayabiliyoruz
   void setThemeMode(ThemeMode mode) {
     if (_themeMode != mode) {
       _themeMode = mode;
@@ -75,7 +72,7 @@ class MyApp extends StatelessWidget {
       colorScheme: ColorScheme.fromSeed(
         seedColor: primarySeedColor,
         brightness: Brightness.dark,
-        background: Colors.grey[900], 
+        surface: Colors.grey[900],
       ),
       textTheme: appTextTheme.apply(bodyColor: Colors.white, displayColor: Colors.white),
       appBarTheme: AppBarTheme(
@@ -94,19 +91,17 @@ class MyApp extends StatelessWidget {
       ),
     );
 
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AppAuthProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-      ],
+    // Sadece gerekli olan provider'ları bırakıyoruz.
+    return ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
-            title: 'Sinema Zamanı',
+            title: 'Sinema 101',
             theme: lightTheme,
             darkTheme: darkTheme,
             themeMode: themeProvider.themeMode,
-            home: const AuthWrapper(),
+            home: const HomeScreen(),
             debugShowCheckedModeBanner: false,
           );
         },

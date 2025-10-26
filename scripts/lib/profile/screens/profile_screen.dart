@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
-import '../../shared/bottom_nav.dart';
+import 'package:myapp/shared/bottom_nav.dart';
+
 
 
 class ProfileScreen extends StatelessWidget {

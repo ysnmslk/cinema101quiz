@@ -1,7 +1,9 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/profile/screens/profile_screen.dart'; // Profil ekranını import et
-import 'package:myapp/settings/screens/settings_screen.dart';
+import '../home/screens/home_screen.dart';
+import '../profile/screens/profile_screen.dart';
+import '../settings/screens/settings_screen.dart';
+
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -13,31 +15,35 @@ class BottomNavBar extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: (index) {
-        // Eğer zaten o sekmedeysek bir şey yapma
+        // Mevcut sayfadaysa bir şey yapma
         if (index == currentIndex) return;
 
         switch (index) {
-          case 0:
-            // Ana sayfaya git
-            if (ModalRoute.of(context)?.settings.name != '/') {
-              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-            }
-            break;
-            
-          // --- DEĞİŞİKLİĞİN YAPILDIĞI YER ---
-          case 1:
-            // Profil sayfasına git
-            Navigator.push(
+          case 0: // Ana Sayfa
+            Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              PageRouteBuilder(
+                pageBuilder: (context, animation1, animation2) => const HomeScreen(),
+                transitionDuration: Duration.zero,
+              ),
             );
             break;
-
-          case 2:
-            // Ayarlar sayfasına git
-            Navigator.push(
+          case 1: // Profil
+            Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              PageRouteBuilder(
+                pageBuilder: (context, animation1, animation2) => const ProfileScreen(),
+                transitionDuration: Duration.zero,
+              ),
+            );
+            break;
+          case 2: // Ayarlar
+            Navigator.pushReplacement(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (context, animation1, animation2) => const SettingsScreen(),
+                transitionDuration: Duration.zero,
+              ),
             );
             break;
         }
@@ -56,9 +62,6 @@ class BottomNavBar extends StatelessWidget {
           label: 'Ayarlar',
         ),
       ],
-      selectedItemColor: Theme.of(context).colorScheme.primary,
-      unselectedItemColor: Colors.grey,
-      showUnselectedLabels: true, 
     );
   }
 }

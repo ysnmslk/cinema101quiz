@@ -2,8 +2,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_model.dart';
-import 'package:myapp/quiz/screens/quiz_screen.dart';
+import '../models/quiz_model.dart';
+import '../screens/quiz_screen.dart';
 
 class QuizCard extends StatelessWidget {
   final Quiz quiz;

@@ -2,11 +2,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 // Sadece quiz_model.dart'ı import et. Bu dosya Question ve Option'ı da içermeli.
-import 'package:myapp/quiz/models/quiz_model.dart';
-import 'package:myapp/quiz/services/firestore_service.dart';
-import 'package:myapp/quiz/widgets/question_display.dart';
-import 'package:myapp/quiz/widgets/quiz_intro.dart';
-import 'package:myapp/quiz/widgets/quiz_results.dart';
+import '../models/quiz_model.dart';
+import '../services/firestore_service.dart';
+import '../widgets/question_display.dart';
+import '../widgets/quiz_intro.dart';
+import '../widgets/quiz_results.dart';
 
 enum QuizState { loading, intro, question, results }
 

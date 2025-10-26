@@ -1,7 +1,7 @@
 
+import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:myapp/quiz/models/quiz_model.dart';
-import 'package:myapp/quiz/models/quiz_result_model.dart'; // Yeni modeli import et
+import '../models/quiz_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -53,7 +53,6 @@ class FirestoreService {
       await _db.collection('quiz_results').add(result.toMap());
     } catch (e) {
       // Hata yönetimi (örn: loglama)
-      print('Quiz sonucu kaydedilirken hata oluştu: $e');
       rethrow; // Hatayı üst katmana bildir
     }
   }
@@ -65,14 +64,19 @@ class FirestoreService {
       var snapshot = await _db
           .collection('quiz_results')
           .where('userId', isEqualTo: userId)
-          .orderBy('timestamp', descending: true) // En yeni sonuçlar en üstte
+          .orderBy('timestamp', descending: true) // 'dateCompleted' yerine 'timestamp' kullanıldı
           .get();
           
       return snapshot.docs
-          .map((doc) => QuizResult.fromFirestore(doc))
+          .map((doc) => QuizResult.fromMap(doc.data(), doc.id))
           .toList();
-    } catch (e) {
-      print('Kullanıcı quiz sonuçları getirilirken hata oluştu: $e');
+    } catch (e, s) {
+      developer.log(
+        'Kullanıcı quiz sonuçları getirilirken hata oluştu',
+        name: 'FirestoreService',
+        error: e,
+        stackTrace: s,
+      );
       return []; // Hata durumunda boş liste döndür
     }
   }

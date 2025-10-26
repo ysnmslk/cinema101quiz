@@ -1,5 +1,5 @@
 
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // --- Option (Seçenek) Modeli ---
 class Option {
@@ -8,7 +8,6 @@ class Option {
 
   Option({required this.text, this.isCorrect = false});
 
-  // Firestore'a yazmak için Map'e dönüştürür
   Map<String, dynamic> toMap() {
     return {
       'text': text,
@@ -16,7 +15,6 @@ class Option {
     };
   }
 
-  // Firestore'dan okumak için Map'ten nesne oluşturur
   factory Option.fromMap(Map<String, dynamic> map) {
     return Option(
       text: map['text'] ?? '',
@@ -30,23 +28,20 @@ class Question {
   final String id;
   String text;
   List<Option> options;
-  int correctAnswerIndex; 
+  int correctAnswerIndex;
 
   Question({
-    this.id = '', // ID başlangıçta boş olabilir
+    this.id = '',
     required this.text,
     required this.options,
     required this.correctAnswerIndex,
   });
 
-  // Firestore'a yazmak için Map'e dönüştürür
   Map<String, dynamic> toMap() {
-    // Doğru cevap indeksine göre seçeneklerin isCorrect alanını ayarla
     for (int i = 0; i < options.length; i++) {
       options[i].isCorrect = (i == correctAnswerIndex);
     }
     return {
-      // 'id' alanını Map'e dahil ETMİYORUZ, çünkü bu sub-collection'da anlamsızdır.
       'text': text,
       'options': options.map((opt) => opt.toMap()).toList(),
     };
@@ -58,14 +53,12 @@ class Question {
         .toList();
 
     int correctIndex = optionsList.indexWhere((opt) => opt.isCorrect);
-    
+
     return Question(
       id: documentId,
       text: map['text'] ?? '',
       options: optionsList,
-      // Eğer hiçbir seçenek 'isCorrect' olarak işaretlenmemişse, -1 döner. 
-      // Bu durumu ele almak önemlidir. Genellikle bir doğrulama hatasıdır.
-      correctAnswerIndex: correctIndex, 
+      correctAnswerIndex: correctIndex,
     );
   }
 }
@@ -82,28 +75,24 @@ class Quiz {
   List<Question> questions;
 
   Quiz({
-    this.id = '', // ID başlangıçta boş olabilir
+    this.id = '',
     required this.title,
     required this.description,
     required this.imageUrl,
     required this.category,
-    this.durationMinutes = 0, // Varsayılan değerler ekleyelim
+    this.durationMinutes = 0,
     this.totalQuestions = 0,
     this.questions = const [],
   });
 
-  // Firestore'a yazmak için Map'e dönüştürür
-  // --- GÜNCELLENMİŞ KISIM --- //
   Map<String, dynamic> toMap() {
     return {
-      // 'id' yi ve 'questions' listesini BURADA DAHİL ETMİYORUZ.
-      // 'id' belge adıdır, 'questions' ise bir alt koleksiyondur.
       'title': title,
       'description': description,
       'imageUrl': imageUrl,
       'category': category,
-      'durationMinutes': durationMinutes, // Artık bu alanları da ekliyoruz
-      'totalQuestions': questions.length, // Soru sayısını dinamik olarak hesapla
+      'durationMinutes': durationMinutes,
+      'totalQuestions': questions.length,
     };
   }
 
@@ -116,7 +105,62 @@ class Quiz {
       category: map['category'] ?? '',
       durationMinutes: map['durationMinutes'] ?? 0,
       totalQuestions: map['totalQuestions'] ?? 0,
-      // 'questions' burada yüklenmez, getQuizById gibi özel bir metotla yüklenir.
+    );
+  }
+}
+
+// --- QuizResult (Quiz Sonucu) Modeli ---
+class QuizResult {
+  final String? id;
+  final String quizId;
+  final String userId;
+  final int score;
+  final int totalQuestions;
+  final Timestamp timestamp;
+  final List<int> userAnswers; // TİP GÜNCELLENDİ: List<int>
+
+  // UI'da kullanılacak, veritabanında saklanmayacak alanlar
+  final String quizTitle;
+  final String quizImageUrl;
+
+  QuizResult({
+    this.id,
+    required this.quizId,
+    required this.userId,
+    required this.score,
+    required this.totalQuestions,
+    required this.timestamp,
+    required this.userAnswers, // TİP GÜNCELLENDİ
+    this.quizTitle = '',
+    this.quizImageUrl = '',
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'quizId': quizId,
+      'userId': userId,
+      'score': score,
+      'totalQuestions': totalQuestions,
+      'timestamp': timestamp, // Doğrudan Timestamp nesnesi kullanılıyor
+      'userAnswers': userAnswers, // TİP GÜNCELLENDİ
+      // UI için gerekli verileri de sonucun içine gömüyoruz.
+      'quizTitle': quizTitle,
+      'quizImageUrl': quizImageUrl,
+    };
+  }
+
+  factory QuizResult.fromMap(Map<String, dynamic> map, String documentId) {
+    return QuizResult(
+      id: documentId,
+      quizId: map['quizId'] ?? '',
+      userId: map['userId'] ?? '',
+      score: map['score'] ?? 0,
+      totalQuestions: map['totalQuestions'] ?? 0,
+      timestamp: map['timestamp'] as Timestamp? ?? Timestamp.now(),
+      // GÜNCELLENDİ: List<int> olarak okunuyor
+      userAnswers: List<int>.from(map['userAnswers'] ?? []),
+      quizTitle: map['quizTitle'] ?? '', 
+      quizImageUrl: map['quizImageUrl'] ?? '',
     );
   }
 }

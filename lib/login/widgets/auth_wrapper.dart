@@ -1,21 +1,16 @@
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:myapp/login/providers/auth_provider.dart';
-import 'package:myapp/login/screens/login_screen.dart';
-import 'package:myapp/home/screens/home_screen.dart';
+import '../screens/login_screen.dart';
+import '../../home/screens/home_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // KULLANIM GÜNCELLENDİ
-    final authProvider = Provider.of<AppAuthProvider>(context, listen: false);
-
     return StreamBuilder<User?>(
-      stream: authProvider.authStateChanges, // Oturum durumunu dinle
+      stream: FirebaseAuth.instance.authStateChanges(), // Doğrudan FirebaseAuth'dan dinle
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -27,8 +22,10 @@ class AuthWrapper extends StatelessWidget {
 
         final user = snapshot.data;
         if (user != null) {
+          // Kullanıcı giriş yapmışsa ana ekrana yönlendir
           return const HomeScreen();
         } else {
+          // Kullanıcı giriş yapmamışsa giriş ekranını göster
           return const LoginScreen();
         }
       },

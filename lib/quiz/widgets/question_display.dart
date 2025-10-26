@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 // --- DOĞRU IMPORT --- //
 // Artık Question, Option gibi tüm modeller bu tek dosyadan geliyor.
-import 'package:myapp/quiz/models/quiz_model.dart';
+import '../models/quiz_model.dart';
 
 class QuestionDisplay extends StatelessWidget {
   final Question question;

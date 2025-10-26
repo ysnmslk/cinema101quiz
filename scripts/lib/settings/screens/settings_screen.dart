@@ -1,8 +1,10 @@
 
 import 'package:flutter/material.dart';
+import 'package:myapp/main.dart';
+import 'package:myapp/shared/bottom_nav.dart';
 import 'package:provider/provider.dart';
-import '../../main.dart'; // ThemeProvider için
-import '../../shared/bottom_nav.dart';
+
+
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});

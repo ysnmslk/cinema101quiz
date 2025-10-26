@@ -1,13 +1,10 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // FirebaseAuth import edildi
 import 'package:flutter/material.dart';
-import 'package:myapp/login/providers/auth_provider.dart';
-import 'package:myapp/quiz/models/quiz_model.dart';
-import 'package:myapp/quiz/models/quiz_result_model.dart';
-import 'package:myapp/quiz/services/firestore_service.dart';
-import 'package:provider/provider.dart';
+import '../models/quiz_model.dart';
+import '../services/firestore_service.dart';
 
-// 1. Widget'ı StatefulWidget'a dönüştür
 class QuizResults extends StatefulWidget {
   final Quiz quiz;
   final int score;
@@ -26,51 +23,44 @@ class QuizResults extends StatefulWidget {
   State<QuizResults> createState() => _QuizResultsState();
 }
 
-// 2. State sınıfını oluştur
 class _QuizResultsState extends State<QuizResults> {
-  
-  // 3. initState içinde kaydetme işlemini tetikle
   @override
   void initState() {
     super.initState();
-    // initState, build'den önce sadece bir kez çalışır.
-    // Bu, sonucu veritabanına bir kez kaydetmek için mükemmel bir yerdir.
-    // Kullanıcı bilgisine erişmek için context'i kullanmadan, bir sonraki frame'de çalışmasını sağlıyoruz.
+    // Sonucu kaydetmek için bir frame beklendikten sonra çağrılır
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _saveResult();
     });
   }
 
-  // 4. Sonucu kaydeden özel metot
+  // AppAuthProvider yerine doğrudan FirebaseAuth kullanır
   Future<void> _saveResult() async {
-    // Servislere ve provider'lara eriş
-    final authProvider = Provider.of<AppAuthProvider>(context, listen: false);
     final firestoreService = FirestoreService();
+    final user = FirebaseAuth.instance.currentUser; // Kullanıcıyı doğrudan al
 
-    final user = authProvider.user;
-    if (user == null) return; // Eğer kullanıcı giriş yapmamışsa kaydetme
+    if (user == null) {
+       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sonuçları kaydetmek için giriş yapmalısınız.')),
+        );
+      }
+      return;
+    }
 
-    // Kaydedilecek QuizResult nesnesini oluştur
     final newResult = QuizResult(
-      id: '', // Firestore otomatik ID atayacak
       userId: user.uid,
       quizId: widget.quiz.id,
-      quizTitle: widget.quiz.title,
-      quizImageUrl: widget.quiz.imageUrl,
       score: widget.score,
       totalQuestions: widget.quiz.questions.length,
       timestamp: Timestamp.now(),
+      userAnswers: widget.userAnswers, // Kullanıcının cevaplarını kaydet
+      quizTitle: widget.quiz.title,
+      quizImageUrl: widget.quiz.imageUrl,
     );
 
-    // Servis aracılığıyla veritabanına kaydet
     try {
       await firestoreService.saveQuizResult(newResult);
-      // İsteğe bağlı: Başarılı kayıttan sonra bir mesaj gösterebiliriz
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   const SnackBar(content: Text('Sonucunuz başarıyla kaydedildi!')),
-      // );
     } catch (e) {
-      // İsteğe bağlı: Hata durumunda kullanıcıyı bilgilendir
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Hata: Sonucunuz kaydedilemedi. $e')),
@@ -78,7 +68,6 @@ class _QuizResultsState extends State<QuizResults> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {

@@ -1,10 +1,10 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/admin/screens/add_quiz_screen.dart';
-import 'package:myapp/quiz/models/quiz_model.dart';
-import 'package:myapp/quiz/services/firestore_service.dart';
-import 'package:myapp/quiz/widgets/quiz_card.dart';
-import 'package:myapp/shared/bottom_nav.dart';
+import '../../admin/screens/add_quiz_screen.dart';
+import '../../quiz/models/quiz_model.dart';
+import '../../quiz/services/firestore_service.dart';
+import '../../quiz/widgets/quiz_card.dart';
+import '../../shared/bottom_nav.dart'; // Doğru import yolu
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -80,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Quizler'),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -122,15 +123,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       : LayoutBuilder(
                           builder: (context, constraints) {
                             int crossAxisCount = (constraints.maxWidth / 180).floor();
-                            // --- DEĞİŞİKLİĞİN YAPILDIĞI YER ---
                             return GridView.builder(
                               padding: const EdgeInsets.all(8.0),
                               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: crossAxisCount > 0 ? crossAxisCount : 1,
                                 crossAxisSpacing: 10.0,
                                 mainAxisSpacing: 10.0,
-                                // childAspectRatio kaldırıldı, yerine mainAxisExtent kullanıldı.
-                                mainAxisExtent: 250, // Her bir kart için sabit yükseklik
+                                mainAxisExtent: 250, 
                               ),
                               itemCount: _filteredQuizzes.length,
                               itemBuilder: (context, index) {

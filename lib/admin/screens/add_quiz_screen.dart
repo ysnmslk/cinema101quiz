@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_model.dart' as quiz_models;
-import 'package:myapp/quiz/services/firestore_service.dart';
+import '../../quiz/models/quiz_model.dart' as quiz_models;
+import '../../quiz/services/firestore_service.dart';
 
 class AddQuizScreen extends StatefulWidget {
   const AddQuizScreen({super.key});
