@@ -1,10 +1,11 @@
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'home/screens/home_screen.dart';
+import 'login/widgets/auth_wrapper.dart'; // AuthWrapper import edildi
 
 // Tema durumunu yönetmek için ThemeProvider sınıfı
 class ThemeProvider with ChangeNotifier {
@@ -91,9 +92,14 @@ class MyApp extends StatelessWidget {
       ),
     );
 
-    // Sadece gerekli olan provider'ları bırakıyoruz.
-    return ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        StreamProvider<User?>.value(
+          value: FirebaseAuth.instance.authStateChanges(),
+          initialData: null,
+        ),
+      ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
@@ -101,7 +107,7 @@ class MyApp extends StatelessWidget {
             theme: lightTheme,
             darkTheme: darkTheme,
             themeMode: themeProvider.themeMode,
-            home: const HomeScreen(),
+            home: const AuthWrapper(), // Başlangıç ekranı AuthWrapper olarak değiştirildi
             debugShowCheckedModeBanner: false,
           );
         },
