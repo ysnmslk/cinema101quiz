@@ -1,9 +1,8 @@
 
 import 'package:flutter/material.dart';
-import '../home/screens/home_screen.dart';
-import '../profile/screens/profile_screen.dart';
-import '../settings/screens/settings_screen.dart';
-
+import 'package:myapp/home/screens/home_screen.dart';
+import 'package:myapp/profile/screens/profile_screen.dart';
+import 'package:myapp/settings/screens/settings_screen.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -15,7 +14,7 @@ class BottomNavBar extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: (index) {
-        // Mevcut sayfadaysa bir şey yapma
+        // Eğer zaten o sayfadaysak tekrar yönlendirme yapma
         if (index == currentIndex) return;
 
         switch (index) {

@@ -1,3 +1,5 @@
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -18,38 +20,52 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // GoogleSignIn örneğini oluştur
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: ['email'],
-      );
-
-      // Kullanıcı giriş penceresini aç
+      final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
-        // Kullanıcı iptal etti
-        setState(() {
-          _isSigningIn = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isSigningIn = false;
+          });
+        }
         return;
       }
 
-      // Google kimlik doğrulamasını al
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      // Firebase kimlik bilgisi oluştur
-      final credential = GoogleAuthProvider.credential(
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Firebase ile giriş yap
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final User? user = userCredential.user;
 
-      if (mounted) {
-        Navigator.of(context).pop();
+      if (user != null) {
+        // Kullanıcı bilgilerini Firestore'a kaydet
+        final usersCollection = FirebaseFirestore.instance.collection('1users');
+        final userDoc = usersCollection.doc(user.uid);
+
+        final userData = {
+          'uid': user.uid,
+          'displayName': user.displayName,
+          'email': user.email,
+          'photoURL': user.photoURL,
+          'lastLogin': FieldValue.serverTimestamp(),
+        };
+
+        final docSnapshot = await userDoc.get();
+        if (!docSnapshot.exists) {
+          // Yeni kullanıcı, varsayılan alanları ekle
+          userData['createdAt'] = FieldValue.serverTimestamp();
+          userData['firstLogin'] = FieldValue.serverTimestamp(); 
+          userData['level_title'] = 'Yeni Üye'; 
+          userData['total_score'] = 0; 
+        }
+
+        await userDoc.set(userData, SetOptions(merge: true));
       }
+
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

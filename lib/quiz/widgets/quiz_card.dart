@@ -10,19 +10,40 @@ class QuizCard extends StatelessWidget {
 
   const QuizCard({super.key, required this.quiz});
 
+  // Base64 string'ini çözümlemek için yardımcı fonksiyon
   Uint8List _decodeBase64(String base64String) {
     try {
+      // URI'nin başındaki "data:image/...;base64," kısmını ayıkla
       String pureBase64 = base64String.split(',').last;
       return base64Decode(pureBase64);
     } catch (e) {
+      // Hata durumunda boş byte listesi döndür
       return Uint8List(0);
     }
+  }
+
+  // Hata veya geçersiz URL durumunda gösterilecek varsayılan widget
+  Widget _buildErrorImage() {
+    return Container(
+      color: Colors.grey[200],
+      child: const Center(
+        child: Icon(
+          Icons.quiz_outlined, // Tematik bir ikon
+          size: 40,
+          color: Colors.grey,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     Widget imageWidget;
-    if (quiz.imageUrl.startsWith('data:image')) {
+
+    // Daha güvenli bir URL ayrıştırma yöntemi kullan
+    final uri = Uri.tryParse(quiz.imageUrl);
+
+    if (uri != null && uri.isScheme('data')) {
       final imageBytes = _decodeBase64(quiz.imageUrl);
       imageWidget = imageBytes.isNotEmpty
           ? Image.memory(
@@ -31,7 +52,7 @@ class QuizCard extends StatelessWidget {
               fit: BoxFit.cover, 
             )
           : _buildErrorImage();
-    } else {
+    } else if (uri != null && (uri.isScheme('http') || uri.isScheme('https'))) {
       imageWidget = Image.network(
         quiz.imageUrl,
         width: double.infinity,
@@ -42,6 +63,9 @@ class QuizCard extends StatelessWidget {
         },
         errorBuilder: (context, error, stackTrace) => _buildErrorImage(),
       );
+    } else {
+      // Geçersiz, boş veya desteklenmeyen URL'ler için varsayılan widget
+      imageWidget = _buildErrorImage();
     }
 
     return Card(
@@ -59,17 +83,14 @@ class QuizCard extends StatelessWidget {
             ),
           );
         },
-        // --- DEĞİŞİKLİĞİN YAPILDIĞI YER ---
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // Sütun yüksekliğini içeriğine göre ayarla
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Resim 16:9 oranını koruyacak
             AspectRatio(
               aspectRatio: 16 / 9,
               child: imageWidget,
             ),
-            // Metin alanı
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
@@ -98,19 +119,6 @@ class QuizCard extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorImage() {
-    return Container(
-      color: Colors.grey[200],
-      child: const Center(
-        child: Icon(
-          Icons.quiz_outlined,
-          size: 40,
-          color: Colors.grey,
         ),
       ),
     );
