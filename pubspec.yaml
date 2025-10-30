@@ -24,8 +24,8 @@ dependencies:
   # UI & Icons
   cupertino_icons: ^1.0.6
   go_router: ^14.2.0
-  google_fonts: ^6.2.1 # google_fonts eklendi
-
+  google_fonts: ^6.2.1
+  font_awesome_flutter: ^10.7.0 # Eklendi
 
 dev_dependencies:
   flutter_test:

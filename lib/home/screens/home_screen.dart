@@ -1,10 +1,10 @@
 
 import 'package:flutter/material.dart';
-import '../../admin/screens/add_quiz_screen.dart';
-import '../../quiz/models/quiz_model.dart';
-import '../../quiz/services/firestore_service.dart';
-import '../../quiz/widgets/quiz_card.dart';
-import '../../shared/bottom_nav.dart'; // Doğru import yolu
+import 'package:myapp/add_quiz/screens/add_quiz_screen.dart';
+import 'package:myapp/quiz/services/firestore_service.dart';
+import 'package:myapp/shared/bottom_nav.dart';
+import 'package:myapp/quiz/models/quiz_model.dart'; // Güncellendi
+import 'package:myapp/home/widgets/quiz_card.dart';   // Güncellendi
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,9 +15,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final FirestoreService _firestoreService = FirestoreService();
-  List<Quiz> _quizzes = [];
-  bool _isLoading = true;
-  String _searchQuery = '';
+  late Future<List<Quiz>> _quizzesFuture;
+  String _searchTerm = '';
 
   @override
   void initState() {
@@ -25,125 +24,94 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadQuizzes();
   }
 
-  Future<void> _loadQuizzes() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      var quizzes = await _firestoreService.getQuizzes();
-      if (mounted) {
-        setState(() {
-          _quizzes = quizzes;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Quizler yüklenirken bir hata oluştu: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  List<Quiz> get _filteredQuizzes {
-    if (_searchQuery.isEmpty) {
-      return _quizzes;
-    }
-    return _quizzes
-        .where((quiz) =>
-            quiz.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            quiz.category.toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
-  }
-
-  Future<void> _navigateToAddQuiz() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AddQuizScreen(),
-      ),
-    );
-    if (result == true) {
-      _loadQuizzes();
-    }
+  void _loadQuizzes() {
+    _quizzesFuture = _firestoreService.getQuizzes();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quizler'),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _navigateToAddQuiz,
+        title: const Text('Quiz App'),
+        automaticallyImplyLeading: false, // Geri tuşunu kaldır
+        actions: const [
+          // Arama butonu gibi eylemler buraya eklenebilir
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: const InputDecoration(
+                labelText: 'Quiz Ara',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchTerm = value.toLowerCase();
+                });
+              },
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadQuizzes,
+          Expanded(
+            child: FutureBuilder<List<Quiz>>(
+              future: _quizzesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Bir hata oluştu: ${snapshot.error}'));
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('Gösterilecek quiz bulunamadı.'));
+                }
+
+                final quizzes = snapshot.data!
+                    .where((quiz) =>
+                        quiz.title.toLowerCase().contains(_searchTerm) ||
+                        quiz.description.toLowerCase().contains(_searchTerm))
+                    .toList();
+
+                if (quizzes.isEmpty) {
+                  return const Center(child: Text('Arama kriterlerine uygun quiz bulunamadı.'));
+                }
+
+                return GridView.builder(
+                  padding: const EdgeInsets.all(8.0),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2, // İki sütunlu grid
+                    crossAxisSpacing: 10.0,
+                    mainAxisSpacing: 10.0,
+                    childAspectRatio: 0.8, // Kartların en-boy oranı
+                  ),
+                  itemCount: quizzes.length,
+                  itemBuilder: (context, index) {
+                    return QuizCard(quiz: quizzes[index]);
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadQuizzes,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Quiz veya kategori ara...',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(25.0)),
-                  ),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-              ),
-            ),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filteredQuizzes.isEmpty
-                      ? const Center(
-                          child: Text('Aradığınız kriterlere uygun quiz bulunamadı.'),
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            int crossAxisCount = (constraints.maxWidth / 180).floor();
-                            return GridView.builder(
-                              padding: const EdgeInsets.all(8.0),
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount > 0 ? crossAxisCount : 1,
-                                crossAxisSpacing: 10.0,
-                                mainAxisSpacing: 10.0,
-                                mainAxisExtent: 250, 
-                              ),
-                              itemCount: _filteredQuizzes.length,
-                              itemBuilder: (context, index) {
-                                final quiz = _filteredQuizzes[index];
-                                return QuizCard(quiz: quiz);
-                              },
-                            );
-                          },
-                        ),
-            ),
-          ],
-        ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddQuizScreen()),
+          ).then((_) {
+            // AddQuizScreen'den geri dönüldüğünde listeyi yenile
+            setState(() {
+              _loadQuizzes();
+            });
+          });
+        },
       ),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 0),
+      bottomNavigationBar: const BottomNavBar(currentIndex: 0), // Ana sayfa index'i
     );
   }
 }
