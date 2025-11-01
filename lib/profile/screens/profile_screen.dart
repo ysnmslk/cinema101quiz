@@ -1,92 +1,113 @@
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:myapp/auth/services/auth_service.dart';
-import 'package:myapp/quiz/models/user_quiz_result.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
 import 'package:myapp/quiz/services/firestore_service.dart';
-import 'package:myapp/shared/bottom_nav.dart';
+import 'package:myapp/home/widgets/quiz_card.dart';
+import 'package:myapp/quiz/models/user_quiz_result.dart'; // Eklendi
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final AuthService authService = AuthService();
-    final FirestoreService firestoreService = FirestoreService();
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final firestoreService = FirestoreService();
     final user = authService.currentUser;
 
     if (user == null) {
-      // Kullanıcı giriş yapmamışsa, bu ekranın görünmemesi gerekir ama yine de kontrol edelim.
       return const Scaffold(
         body: Center(child: Text('Lütfen giriş yapın.')),
-        bottomNavigationBar: BottomNavBar(currentIndex: 1),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(user.displayName ?? 'Profil'),
-        automaticallyImplyLeading: false,
-        centerTitle: true,
+        title: const Text('Profil'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await authService.signOut();
+            },
+            tooltip: 'Çıkış Yap',
+          )
+        ],
       ),
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
         children: [
-          const SizedBox(height: 20),
-          CircleAvatar(
-            radius: 50,
-            backgroundImage: user.photoURL != null ? NetworkImage(user.photoURL!) : null,
-            child: user.photoURL == null ? const Icon(Icons.person, size: 50) : null,
-          ),
-          const SizedBox(height: 12),
-          Text(user.displayName ?? '', style: Theme.of(context).textTheme.headlineSmall),
-          Text(user.email ?? '', style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 20),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text('Çözülen Quizler', style: Theme.of(context).textTheme.titleLarge),
-          ),
-          Expanded(
-            child: StreamBuilder<List<UserQuizResultWithQuiz>>(
-              stream: firestoreService.getUserResultsWithQuizDetails(user.uid),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Sonuçlar yüklenemedi: ${snapshot.error}'));
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Henüz hiç quiz çözmediniz.'));
-                }
-
-                final results = snapshot.data!;
-
-                return ListView.builder(
-                  itemCount: results.length,
-                  itemBuilder: (context, index) {
-                    final item = results[index];
-                    final result = item.result;
-                    final quiz = item.quiz;
-
-                    return ListTile(
-                      leading: quiz.imageUrl.isNotEmpty
-                          ? Image.network(quiz.imageUrl, width: 50, height: 50, fit: BoxFit.cover)
-                          : const Icon(Icons.image_not_supported, size: 50),
-                      title: Text(quiz.title),
-                      subtitle: Text('Puan: ${result.score} / ${result.totalQuestions}'),
-                      trailing: Text(
-                        // Tarihi daha okunabilir bir formata çevirelim
-                        '${result.dateCompleted.toDate().day}/${result.dateCompleted.toDate().month}/${result.dateCompleted.toDate().year}',
-                      ),
-                    );
-                  },
-                );
-              },
+          Center(
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundImage: user.photoURL != null ? NetworkImage(user.photoURL!) : null,
+                  child: user.photoURL == null ? const Icon(Icons.person, size: 50) : null,
+                ),
+                const SizedBox(height: 16),
+                Text(user.displayName ?? 'İsim Yok', style: Theme.of(context).textTheme.headlineSmall),
+                Text(user.email ?? 'E-posta Yok', style: Theme.of(context).textTheme.bodyMedium),
+              ],
             ),
+          ),
+          const Divider(height: 40),
+          Text('Çözülen Testler', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 10),
+          // FutureBuilder'ı doğru fonksiyon ve tiple güncelledik
+          FutureBuilder<List<UserQuizResult>>(
+            future: firestoreService.getCompletedQuizResults(user.uid), // DOĞRU FONKSİYON KULLANILDI
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Bir hata oluştu: ${snapshot.error}'));
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text('Henüz hiç test çözmediniz.'));
+              }
+
+              final completedQuizzes = snapshot.data!;
+
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: completedQuizzes.length,
+                itemBuilder: (context, index) {
+                  final result = completedQuizzes[index];
+                  
+                  // Quiz detaylarını ayrıca çekmek için FutureBuilder
+                  return FutureBuilder<Quiz?>(
+                    future: firestoreService.getQuizById(result.quizId),
+                    builder: (context, quizSnapshot) {
+                      if (quizSnapshot.connectionState == ConnectionState.waiting) {
+                        return const ListTile(title: Text('Yükleniyor...'));
+                      }
+                      if (!quizSnapshot.hasData || quizSnapshot.data == null) {
+                        // Quiz silinmiş veya bulunamıyor olabilir.
+                        return const SizedBox.shrink(); 
+                      }
+                      final quiz = quizSnapshot.data!;
+
+                      // QuizCard'ı kullanarak sonucu göster
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10.0),
+                        child: QuizCard(
+                          quiz: quiz,
+                          isCompleted: true,
+                          showImage: false, // Profilde resimleri gösterme
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 1),
     );
   }
 }

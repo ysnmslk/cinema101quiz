@@ -13,7 +13,7 @@ class UserQuizResult {
     required this.quizId,
     required this.score,
     required this.totalQuestions,
-    required this.dateCompleted,
+    required this.dateCompleted, required int correctAnswers,
   });
 
   // Firestore'dan okumak için
@@ -23,7 +23,7 @@ class UserQuizResult {
       quizId: doc.id, // Belge ID'sini quizId olarak kullanıyoruz
       score: data['score'] ?? 0,
       totalQuestions: data['totalQuestions'] ?? 0,
-      dateCompleted: data['dateCompleted'] as Timestamp? ?? Timestamp.now(),
+      dateCompleted: data['dateCompleted'] as Timestamp? ?? Timestamp.now(), correctAnswers: 0,
     );
   }
 

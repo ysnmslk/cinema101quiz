@@ -8,7 +8,6 @@ class FirestoreService {
 
   // --- Quiz Yönetimi ---
 
-  // Tüm quizleri getir (oluşturulma tarihine göre en yeniden eskiye sıralı)
   Stream<List<Quiz>> getQuizzes() {
     return _db
         .collection('quizzes')
@@ -17,19 +16,42 @@ class FirestoreService {
         .map((snapshot) => snapshot.docs.map((doc) => Quiz.fromFirestore(doc)).toList());
   }
 
-  // Belirli bir ID'ye sahip quiz'i getir
-  Future<Quiz> getQuizById(String quizId) {
-    return _db.collection('quizzes').doc(quizId).get().then((doc) => Quiz.fromFirestore(doc));
+  Future<Quiz?> getQuizById(String quizId) async {
+    try {
+      final doc = await _db.collection('quizzes').doc(quizId).get();
+      if (doc.exists) {
+        return Quiz.fromFirestore(doc);
+      }
+    } catch (e) {
+      // Hata durumunda veya quiz bulunamazsa null dönebilir
+      print('Error getting quiz by ID: $e');
+    }
+    return null;
   }
 
-  // Yeni bir quiz ekle
   Future<void> addQuiz(Quiz quiz) {
     return _db.collection('quizzes').add(quiz.toMap());
   }
 
   // --- Kullanıcı Sonuçları Yönetimi ---
 
-  // Kullanıcının tamamladığı quizlerin ID'lerini getir
+  // YENİ FONKSİYON: Kullanıcının tüm detaylı quiz sonuçlarını getir (Future olarak)
+  Future<List<UserQuizResult>> getCompletedQuizResults(String userId) {
+    if (userId.isEmpty) {
+      return Future.value([]);
+    }
+    return _db
+        .collection('users')
+        .doc(userId)
+        .collection('results')
+        .orderBy('dateCompleted', descending: true) // En yeniden eskiye sırala
+        .get()
+        .then((snapshot) => snapshot.docs
+            .map((doc) => UserQuizResult.fromFirestore(doc))
+            .toList());
+  }
+
+
   Stream<Set<String>> getCompletedQuizzes(String userId) {
     if (userId.isEmpty) {
       return Stream.value({});
@@ -44,7 +66,7 @@ class FirestoreService {
     });
   }
 
-  // Quiz'i tamamlandı olarak işaretle (genel tamamlama listesi için)
+
   Future<void> markQuizAsCompleted(String userId, String quizId) {
     if (userId.isEmpty || quizId.isEmpty) return Future.value();
     return _db.collection('users').doc(userId).set({
@@ -52,7 +74,7 @@ class FirestoreService {
     }, SetOptions(merge: true));
   }
 
-  // Detaylı quiz sonucunu kaydet
+
   Future<void> saveQuizResult(String userId, UserQuizResult result) {
      if (userId.isEmpty) return Future.value();
     return _db
@@ -63,16 +85,12 @@ class FirestoreService {
         .set(result.toMap());
   }
 
-  // Kullanıcının tüm sonuçlarını quiz detayları ile birlikte getir
+
   Stream<List<UserQuizResultWithQuiz>> getUserResultsWithQuizDetails(String userId) {
     if (userId.isEmpty) {
       return Stream.value([]);
     }
-    // Bu fonksiyon, karmaşık yapısı nedeniyle birden fazla veritabanı okuması gerektirir.
-    // Önce kullanıcının tüm sonuçlarını alıp, sonra her bir sonuç için quiz detayını çekeceğiz.
-    // Gerçek bir uygulamada bu, performansı optimize etmek için bir backend fonksiyonu (Cloud Function)
-    // ile yapılabilir, ancak istemci tarafında bu şekilde uygulayabiliriz.
-
+    
     final resultsStream = _db.collection('users').doc(userId).collection('results').snapshots();
 
     return resultsStream.asyncMap((resultsSnapshot) async {
@@ -81,14 +99,23 @@ class FirestoreService {
         final result = UserQuizResult.fromFirestore(doc);
         try {
           final quiz = await getQuizById(result.quizId);
-          detailedResults.add(UserQuizResultWithQuiz(result: result, quiz: quiz));
+          if(quiz != null) {
+            detailedResults.add(UserQuizResultWithQuiz(result: result, quiz: quiz));
+          }
         } catch (e) {
-          // Quiz silinmiş veya ulaşılamıyor olabilir, bu sonucu atla
+          
         }
       }
-      // Sonuçları tarihe göre sırala
       detailedResults.sort((a, b) => b.result.dateCompleted.compareTo(a.result.dateCompleted));
       return detailedResults;
     });
   }
+}
+
+// Detaylı sonuçları ve quiz bilgilerini birleştiren yardımcı bir sınıf
+class UserQuizResultWithQuiz {
+  final UserQuizResult result;
+  final Quiz quiz;
+
+  UserQuizResultWithQuiz({required this.result, required this.quiz});
 }
