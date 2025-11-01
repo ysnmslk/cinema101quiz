@@ -1,103 +1,92 @@
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:myapp/auth/services/auth_service.dart';
 import 'package:myapp/quiz/models/user_quiz_result.dart';
 import 'package:myapp/quiz/services/firestore_service.dart';
-import 'package:myapp/shared/bottom_nav.dart'; // Alt navigasyon importu
+import 'package:myapp/shared/bottom_nav.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  final FirestoreService _firestoreService = FirestoreService();
-  final User? _currentUser = FirebaseAuth.instance.currentUser;
-
-  late Future<List<UserQuizResult>> _userResultsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    // Kullanıcı giriş yapmışsa sonuçları yükle
-    if (_currentUser != null) {
-      _userResultsFuture = _firestoreService.getUserResultsWithQuizDetails(_currentUser!.uid);
-    } else {
-      // Kullanıcı giriş yapmamışsa, boş bir Future ata
-      _userResultsFuture = Future.value([]);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final AuthService authService = AuthService();
+    final FirestoreService firestoreService = FirestoreService();
+    final user = authService.currentUser;
+
+    if (user == null) {
+      // Kullanıcı giriş yapmamışsa, bu ekranın görünmemesi gerekir ama yine de kontrol edelim.
+      return const Scaffold(
+        body: Center(child: Text('Lütfen giriş yapın.')),
+        bottomNavigationBar: BottomNavBar(currentIndex: 1),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profilim'),
-        automaticallyImplyLeading: false, // Geri tuşunu gizle
+        title: Text(user.displayName ?? 'Profil'),
+        automaticallyImplyLeading: false,
+        centerTitle: true,
       ),
-      body: _currentUser == null
-          ? const Center(
-              child: Text('Sonuçları görmek için lütfen giriş yapın.'),
-            )
-          : FutureBuilder<List<UserQuizResult>>(
-              future: _userResultsFuture,
+      body: Column(
+        children: [
+          const SizedBox(height: 20),
+          CircleAvatar(
+            radius: 50,
+            backgroundImage: user.photoURL != null ? NetworkImage(user.photoURL!) : null,
+            child: user.photoURL == null ? const Icon(Icons.person, size: 50) : null,
+          ),
+          const SizedBox(height: 12),
+          Text(user.displayName ?? '', style: Theme.of(context).textTheme.headlineSmall),
+          Text(user.email ?? '', style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 20),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text('Çözülen Quizler', style: Theme.of(context).textTheme.titleLarge),
+          ),
+          Expanded(
+            child: StreamBuilder<List<UserQuizResultWithQuiz>>(
+              stream: firestoreService.getUserResultsWithQuizDetails(user.uid),
               builder: (context, snapshot) {
-                // Yükleniyor durumu
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                // Hata durumu
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Sonuçlar yüklenirken bir hata oluştu: ${snapshot.error}'),
-                  );
+                  return Center(child: Text('Sonuçlar yüklenemedi: ${snapshot.error}'));
                 }
-                // Veri yok veya boş liste durumu
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
-                    child: Text('Henüz hiç quiz çözmediniz.'),
-                  );
+                  return const Center(child: Text('Henüz hiç quiz çözmediniz.'));
                 }
 
                 final results = snapshot.data!;
 
-                // Başarılı veri durumu
                 return ListView.builder(
-                  padding: const EdgeInsets.all(8.0),
                   itemCount: results.length,
                   itemBuilder: (context, index) {
                     final item = results[index];
-                    return Card(
-                      elevation: 3.0,
-                      margin: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
-                        title: Text(
-                          item.quiz.title,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          item.quiz.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: Text(
-                          'Skor: ${item.result.score}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.deepPurple, // Skoru vurgula
-                          ),
-                        ),
+                    final result = item.result;
+                    final quiz = item.quiz;
+
+                    return ListTile(
+                      leading: quiz.imageUrl.isNotEmpty
+                          ? Image.network(quiz.imageUrl, width: 50, height: 50, fit: BoxFit.cover)
+                          : const Icon(Icons.image_not_supported, size: 50),
+                      title: Text(quiz.title),
+                      subtitle: Text('Puan: ${result.score} / ${result.totalQuestions}'),
+                      trailing: Text(
+                        // Tarihi daha okunabilir bir formata çevirelim
+                        '${result.dateCompleted.toDate().day}/${result.dateCompleted.toDate().month}/${result.dateCompleted.toDate().year}',
                       ),
                     );
                   },
                 );
               },
             ),
-       bottomNavigationBar: const BottomNavBar(currentIndex: 1), // Profil ekranı index'i
+          ),
+        ],
+      ),
+      bottomNavigationBar: const BottomNavBar(currentIndex: 1),
     );
   }
 }

@@ -41,30 +41,16 @@ Bu proje, kullanıcıların çeşitli konularda quizler çözerek bilgi seviyele
 - **Tema Yönetimi (Ayarlar Ekranı):**
   - Kullanıcılar, özel bir "Ayarlar" ekranından **Açık**, **Koyu** veya **Sistem Varsayılanı** temalarından birini seçebilir.
 
+## **Geliştirme Planı (Devam Eden)**
+
+- **Ana Ekran İyileştirmeleri:**
+  - Quizler son eklenenden başa doğru sıralanacak.
+  - Kullanıcının daha önce çözdüğü quizler soluk renkte ve "ÇÖZÜLDÜ" etiketiyle gösterilecek.
+  - Son 10 gün içinde eklenen quizlerde "YENİ" etiketi bulunacak.
+
 ## **Tamamlanan Son Değişiklikler**
 
-- **Profil Ekranı İyileştirmesi:**
-  - **Amaç:** Çözülen quizlerin profil ekranında görünmemesi sorununu çözmek.
-  - **Yapılanlar:**
-    1. `lib/quiz/services/firestore_service.dart` içindeki `getUserResultsWithQuizDetails` fonksiyonu yeniden yazılarak daha verimli ve hataya dayanıklı hale getirildi.
-    2. Yeni mantık, kullanıcının sonuçlarını ve tüm quizleri paralel olarak çekip, bu verileri uygulama içinde (bellekte) birleştirerek Firestore'a yapılan çağrıları azalttı ve veri tutarlılığı sorunlarını giderdi.
-
-## **Güncel Plan: Oturum Yönetimi ve Çıkış Özelliği**
-
-- **Amaç:** Kullanıcının her seferinde giriş yapmak zorunda kalmamasını sağlamak (oturum kalıcılığı) ve istediği zaman güvenli bir şekilde çıkış yapabilmesi için bir mekanizma eklemek.
-
-- **Yapılacaklar:**
-  1.  **Merkezi Kimlik Doğrulama Servisi (`AuthService`) Oluşturma:**
-      - `lib/auth/services/auth_service.dart` adında yeni bir dosya oluşturulacak.
-      - Google ile giriş yapma ve oturumu kapatma (`signOut`) mantığı bu sınıfta toplanacak.
-  2.  **Giriş Ekranı (`LoginScreen`) Oluşturma:**
-      - `lib/auth/screens/login_screen.dart` adında, sadece "Google ile Giriş Yap" düğmesini içeren özel bir ekran oluşturulacak.
-  3.  **Yönlendirme Kapısı (`AuthGate`) Oluşturma:**
-      - `lib/auth/widgets/auth_gate.dart` adında bir widget oluşturulacak.
-      - Bu widget, `FirebaseAuth.instance.authStateChanges()` stream'ini dinleyerek, aktif bir kullanıcı oturumu olup olmadığını kontrol edecek.
-      - Oturum varsa kullanıcıyı `HomeScreen`'e, yoksa `LoginScreen`'e yönlendirecek.
-  4.  **`main.dart` Güncellemesi:**
-      - Uygulamanın başlangıç noktası (`home`) olarak yeni oluşturulan `AuthGate` widget'ı ayarlanacak.
-  5.  **Oturumu Kapat Düğmesi Ekleme:**
-      - `lib/settings/screens/settings_screen.dart` ekranına, `AuthService`'teki `signOut` metodunu çağıran bir "Oturumu Kapat" seçeneği (örneğin bir `ListTile`) eklenecek.
-  6.  **Kod Temizliği:** `HomeScreen` gibi diğer ekranlardaki mevcut giriş yapma mantığı kaldırılacak, çünkü artık tüm kontrol `AuthGate` ve `LoginScreen`'de olacak.
+- Projedeki tüm statik analiz hataları ve uyarıları giderildi.
+- Kod tabanı temizlendi ve en iyi pratiklere uygun hale getirildi.
+- Eksik olan `add_quiz_screen.dart`, `quiz_card.dart` ve `theme_provider.dart` dosyaları oluşturuldu.
+- `shared_preferences` paketi eklenerek tema kalıcılığı sağlandı.

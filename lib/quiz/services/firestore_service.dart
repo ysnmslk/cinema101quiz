@@ -1,122 +1,94 @@
 
-import 'dart:async';
-import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/quiz_model.dart';
-import '../models/user_quiz_result.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
+import 'package:myapp/quiz/models/user_quiz_result.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // --- QUIZ OKUMA VE YAZMA METOTLARI ---
+  // --- Quiz Yönetimi ---
 
-  Future<List<Quiz>> getQuizzes() async {
-    try {
-      var snapshot = await _db.collection('quizzes').get();
-      return snapshot.docs
-          .map((doc) => Quiz.fromMap(doc.data(), doc.id))
-          .toList();
-    } catch (e, s) {
-      developer.log('Quizler getirilirken hata', name: 'FirestoreService', error: e, stackTrace: s);
-      return [];
-    }
+  // Tüm quizleri getir (oluşturulma tarihine göre en yeniden eskiye sıralı)
+  Stream<List<Quiz>> getQuizzes() {
+    return _db
+        .collection('quizzes')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => Quiz.fromFirestore(doc)).toList());
   }
 
-  Future<Quiz?> getQuizById(String quizId) async {
-    try {
-      var quizDoc = await _db.collection('quizzes').doc(quizId).get();
-      if (!quizDoc.exists || quizDoc.data() == null) return null;
-      
-      Quiz quiz = Quiz.fromMap(quizDoc.data()!, quizDoc.id);
-      var questionsSnapshot = await _db.collection('quizzes').doc(quizId).collection('questions').get();
-      
-      if (questionsSnapshot.docs.isNotEmpty) {
-        quiz.questions = questionsSnapshot.docs
-            .map((doc) => Question.fromMap(doc.data(), doc.id))
-            .toList();
-      }
-      return quiz;
-    } catch (e, s) {
-      developer.log('Quiz ID ile getirilirken hata', name: 'FirestoreService', error: e, stackTrace: s);
-      return null;
-    }
+  // Belirli bir ID'ye sahip quiz'i getir
+  Future<Quiz> getQuizById(String quizId) {
+    return _db.collection('quizzes').doc(quizId).get().then((doc) => Quiz.fromFirestore(doc));
   }
 
-  Future<void> addQuiz(Quiz quiz) async {
-    WriteBatch batch = _db.batch();
-    DocumentReference quizRef = _db.collection('quizzes').doc();
-    batch.set(quizRef, quiz.toMap());
-    for (var question in quiz.questions) {
-      DocumentReference questionRef = quizRef.collection('questions').doc();
-      batch.set(questionRef, question.toMap());
-    }
-    await batch.commit();
+  // Yeni bir quiz ekle
+  Future<void> addQuiz(Quiz quiz) {
+    return _db.collection('quizzes').add(quiz.toMap());
   }
 
-  // --- QUIZ SONUÇLARI METOTLARI ---
+  // --- Kullanıcı Sonuçları Yönetimi ---
 
-  Future<void> saveQuizResult(QuizResult result) async {
-    try {
-      await _db.collection('quiz_results').add(result.toMap());
-    } catch (e, s) {
-      developer.log('Quiz sonucu kaydedilirken hata', name: 'FirestoreService', error: e, stackTrace: s);
-      rethrow;
-    }
-  }
-
-  // --- GÜNCELLENMİŞ VE DAHA SAĞLAM METOT ---
-  Future<List<UserQuizResult>> getUserResultsWithQuizDetails(String userId) async {
+  // Kullanıcının tamamladığı quizlerin ID'lerini getir
+  Stream<Set<String>> getCompletedQuizzes(String userId) {
     if (userId.isEmpty) {
-        developer.log("Geçersiz kullanıcı ID'si: userId boş.", name: 'FirestoreService');
-        return [];
+      return Stream.value({});
     }
-
-    try {
-      // 1. Kullanıcının sonuçlarını ve tüm quizleri paralel olarak çek
-      final resultsFuture = _db.collection('quiz_results').where('userId', isEqualTo: userId).get();
-      final quizzesFuture = getQuizzes();
-
-      final List<dynamic> responses = await Future.wait([resultsFuture, quizzesFuture]);
-
-      final QuerySnapshot resultsSnapshot = responses[0] as QuerySnapshot;
-      final List<Quiz> allQuizzes = responses[1] as List<Quiz>;
-
-      if (resultsSnapshot.docs.isEmpty) {
-        developer.log('Bu kullanıcı için hiç sonuç bulunamadı.', name: 'FirestoreService');
-        return [];
+    return _db.collection('users').doc(userId).snapshots().map((snapshot) {
+      if (snapshot.exists && snapshot.data()!.containsKey('completedQuizzes')) {
+        final List<dynamic> completed = snapshot.data()!['completedQuizzes'] ?? [];
+        return Set<String>.from(completed);
+      } else {
+        return {};
       }
+    });
+  }
 
-      // Quizleri bir haritada topla (ID'ye göre hızlı erişim için)
-      final Map<String, Quiz> quizMap = {for (var q in allQuizzes) q.id: q};
+  // Quiz'i tamamlandı olarak işaretle (genel tamamlama listesi için)
+  Future<void> markQuizAsCompleted(String userId, String quizId) {
+    if (userId.isEmpty || quizId.isEmpty) return Future.value();
+    return _db.collection('users').doc(userId).set({
+      'completedQuizzes': FieldValue.arrayUnion([quizId])
+    }, SetOptions(merge: true));
+  }
 
-      // 2. Sonuçları bellekte işle ve birleştir
-      List<UserQuizResult> userResults = [];
+  // Detaylı quiz sonucunu kaydet
+  Future<void> saveQuizResult(String userId, UserQuizResult result) {
+     if (userId.isEmpty) return Future.value();
+    return _db
+        .collection('users')
+        .doc(userId)
+        .collection('results')
+        .doc(result.quizId)
+        .set(result.toMap());
+  }
+
+  // Kullanıcının tüm sonuçlarını quiz detayları ile birlikte getir
+  Stream<List<UserQuizResultWithQuiz>> getUserResultsWithQuizDetails(String userId) {
+    if (userId.isEmpty) {
+      return Stream.value([]);
+    }
+    // Bu fonksiyon, karmaşık yapısı nedeniyle birden fazla veritabanı okuması gerektirir.
+    // Önce kullanıcının tüm sonuçlarını alıp, sonra her bir sonuç için quiz detayını çekeceğiz.
+    // Gerçek bir uygulamada bu, performansı optimize etmek için bir backend fonksiyonu (Cloud Function)
+    // ile yapılabilir, ancak istemci tarafında bu şekilde uygulayabiliriz.
+
+    final resultsStream = _db.collection('users').doc(userId).collection('results').snapshots();
+
+    return resultsStream.asyncMap((resultsSnapshot) async {
+      final List<UserQuizResultWithQuiz> detailedResults = [];
       for (var doc in resultsSnapshot.docs) {
-        QuizResult result = QuizResult.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-
-        if (quizMap.containsKey(result.quizId)) {
-          userResults.add(UserQuizResult(quiz: quizMap[result.quizId]!, result: result));
-        } else {
-          developer.log(
-            'Eşleşmeyen quizId bulundu! Sonuç ID: ${doc.id}, Quiz ID: ${result.quizId}',
-            name: 'FirestoreService',
-          );
+        final result = UserQuizResult.fromFirestore(doc);
+        try {
+          final quiz = await getQuizById(result.quizId);
+          detailedResults.add(UserQuizResultWithQuiz(result: result, quiz: quiz));
+        } catch (e) {
+          // Quiz silinmiş veya ulaşılamıyor olabilir, bu sonucu atla
         }
       }
-      
       // Sonuçları tarihe göre sırala
-      userResults.sort((a, b) => b.result.timestamp.compareTo(a.result.timestamp));
-
-      return userResults;
-
-    } catch (e, s) {
-      developer.log(
-        'Kullanıcı sonuçları ve quiz detayları birleştirilirken hata oluştu',
-        name: 'FirestoreService',
-        error: e,
-        stackTrace: s,
-      );
-      return [];
-    }
+      detailedResults.sort((a, b) => b.result.dateCompleted.compareTo(a.result.dateCompleted));
+      return detailedResults;
+    });
   }
 }

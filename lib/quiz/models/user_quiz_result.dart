@@ -1,10 +1,47 @@
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:myapp/quiz/models/quiz_model.dart';
 
-// Bu model sınıfı, bir kullanıcının bir quiz'den aldığı sonucu
-// ilgili quiz'in detaylarıyla birleştirir.
+// Kullanıcının bir quize verdiği cevapları ve sonucunu saklayan model
 class UserQuizResult {
-  final Quiz quiz; // Quiz başlığı, açıklaması vb. için
-  final QuizResult result; // Kullanıcı skoru, tarihi vb. için
+  final String quizId;
+  final int score;
+  final int totalQuestions;
+  final Timestamp dateCompleted;
 
-  UserQuizResult({required this.quiz, required this.result});
+  UserQuizResult({
+    required this.quizId,
+    required this.score,
+    required this.totalQuestions,
+    required this.dateCompleted,
+  });
+
+  // Firestore'dan okumak için
+  factory UserQuizResult.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return UserQuizResult(
+      quizId: doc.id, // Belge ID'sini quizId olarak kullanıyoruz
+      score: data['score'] ?? 0,
+      totalQuestions: data['totalQuestions'] ?? 0,
+      dateCompleted: data['dateCompleted'] as Timestamp? ?? Timestamp.now(),
+    );
+  }
+
+  // Firestore'a yazmak için
+  Map<String, dynamic> toMap() {
+    return {
+      'score': score,
+      'totalQuestions': totalQuestions,
+      'dateCompleted': dateCompleted,
+      // quizId, document ID olduğu için map içinde olmasına gerek yok
+    };
+  }
+}
+
+// Kullanıcı sonucunu ve o sonuca ait tam Quiz nesnesini birleştiren yardımcı sınıf
+class UserQuizResultWithQuiz {
+  final UserQuizResult result;
+  final Quiz quiz;
+
+  UserQuizResultWithQuiz({required this.result, required this.quiz});
 }

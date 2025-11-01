@@ -1,14 +1,12 @@
 
-import 'dart:async';
 import 'package:flutter/material.dart';
-// Sadece quiz_model.dart'ı import et. Bu dosya Question ve Option'ı da içermeli.
-import '../models/quiz_model.dart';
-import '../services/firestore_service.dart';
-import '../widgets/question_display.dart';
-import '../widgets/quiz_intro.dart';
-import '../widgets/quiz_results.dart';
-
-enum QuizState { loading, intro, question, results }
+import 'package:myapp/auth/services/auth_service.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
+import 'package:myapp/quiz/models/user_quiz_result.dart';
+import 'package:myapp/quiz/services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:myapp/quiz/widgets/question_display.dart';
+import 'package:myapp/quiz/widgets/quiz_results.dart';
 
 class QuizScreen extends StatefulWidget {
   final String quizId;
@@ -21,143 +19,151 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   final FirestoreService _firestoreService = FirestoreService();
-  Quiz? _quiz;
-  QuizState _quizState = QuizState.loading;
+  final AuthService _authService = AuthService();
+  late Future<Quiz> _quizFuture;
+
   int _currentQuestionIndex = 0;
-  final List<int> _userAnswers = [];
-  int? _selectedAnswerIndex;
-  bool _isAnswered = false;
+  final Map<int, int> _selectedAnswers = {}; // Soru index -> Seçilen option index
+  bool _isFinished = false;
 
   @override
   void initState() {
     super.initState();
-    _loadQuiz();
+    _quizFuture = _firestoreService.getQuizById(widget.quizId);
   }
 
-  Future<void> _loadQuiz() async {
-    // getQuizById zaten soruları da getirecek şekilde güncellenmeli
-    final quiz = await _firestoreService.getQuizById(widget.quizId);
-    if (!mounted) return;
-
-    if (quiz != null) {
-      setState(() {
-        _quiz = quiz;
-        _quizState = QuizState.intro;
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Quiz yüklenemedi veya mevcut değil!')),
-      );
-      Navigator.of(context).pop();
-    }
-  }
-
-  void _startQuiz() {
+  void _onAnswerSelected(int questionIndex, int optionIndex) {
     setState(() {
-      _quizState = QuizState.question;
-      _currentQuestionIndex = 0;
-      _userAnswers.clear();
-      _isAnswered = false;
-      _selectedAnswerIndex = null;
+      _selectedAnswers[questionIndex] = optionIndex;
     });
   }
 
-  void _answerQuestion(int selectedOptionIndex) {
-    if (_isAnswered) return;
+  void _submitQuiz() async {
+    final user = _authService.currentUser;
+    if (user == null) return; // Kullanıcı yoksa çık
 
-    setState(() {
-      _selectedAnswerIndex = selectedOptionIndex;
-      _isAnswered = true;
-    });
-
-    _userAnswers.add(selectedOptionIndex);
-
-    Timer(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-      setState(() {
-        _isAnswered = false;
-        _selectedAnswerIndex = null;
-        if (_currentQuestionIndex < _quiz!.questions.length - 1) {
-          _currentQuestionIndex++;
-        } else {
-          _quizState = QuizState.results;
-        }
-      });
-    });
-  }
-
-  void _restartQuiz() {
-    _startQuiz();
-  }
-
-  // --- HATANIN DÜZELTİLDİĞİ YER ---
-  int _calculateScore() {
+    final quiz = await _quizFuture;
     int score = 0;
-    for (int i = 0; i < _quiz!.questions.length; i++) {
-      // 'correctOptionIndex' yerine 'correctAnswerIndex' kullanılıyor
-      if (_userAnswers.length > i &&
-          _userAnswers[i] == _quiz!.questions[i].correctAnswerIndex) {
-        score++;
+    for (int i = 0; i < quiz.questions.length; i++) {
+      if (_selectedAnswers.containsKey(i)) {
+        final selectedOptionIndex = _selectedAnswers[i]!;
+        // Doğru cevabı `correctAnswerIndex` ile kontrol et
+        if (selectedOptionIndex == quiz.questions[i].correctAnswerIndex) {
+          score++;
+        }
       }
     }
-    return score;
+
+    final result = UserQuizResult(
+      quizId: quiz.id,
+      score: score,
+      totalQuestions: quiz.questions.length,
+      dateCompleted: Timestamp.now(),
+    );
+
+    await _firestoreService.saveQuizResult(user.uid, result);
+    await _firestoreService.markQuizAsCompleted(user.uid, quiz.id);
+
+    setState(() {
+      _isFinished = true;
+    });
+  }
+
+  void _goToNextQuestion() {
+    setState(() {
+      _currentQuestionIndex++;
+    });
+  }
+
+  void _goToPreviousQuestion() {
+    setState(() {
+      _currentQuestionIndex--;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_quiz?.title ?? 'Quiz Yükleniyor...'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        bottom: _quizState == QuizState.question && _quiz != null
-            ? PreferredSize(
-                preferredSize: const Size.fromHeight(4.0),
-                child: LinearProgressIndicator(
-                  value: (_currentQuestionIndex + 1) / _quiz!.questions.length,
-                  backgroundColor: Colors.grey[300],
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.deepPurple),
-                ),
-              )
-            : null,
-      ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: _buildBody(),
-      ),
+    return FutureBuilder<Quiz>(
+      future: _quizFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        if (snapshot.hasError) {
+          return Scaffold(body: Center(child: Text('Hata: ${snapshot.error}')));
+        }
+        if (!snapshot.hasData) {
+          return const Scaffold(body: Center(child: Text('Quiz bulunamadı.')));
+        }
+
+        final quiz = snapshot.data!;
+
+        if (_isFinished) {
+          return QuizResults(
+            quiz: quiz,
+            selectedAnswers: _selectedAnswers,
+            onRetake: () {
+              setState(() {
+                _isFinished = false;
+                _currentQuestionIndex = 0;
+                _selectedAnswers.clear();
+              });
+            },
+          );
+        }
+
+        final question = quiz.questions[_currentQuestionIndex];
+        final isLastQuestion = _currentQuestionIndex == quiz.questions.length - 1;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(quiz.title),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(4.0),
+              child: LinearProgressIndicator(
+                value: (_currentQuestionIndex + 1) / quiz.questions.length,
+              ),
+            ),
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: QuestionDisplay(
+              question: question,
+              selectedOptionIndex: _selectedAnswers[_currentQuestionIndex],
+              onAnswerSelected: (optionIndex) {
+                _onAnswerSelected(_currentQuestionIndex, optionIndex);
+              },
+            ),
+          ),
+          bottomNavigationBar: BottomAppBar(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (_currentQuestionIndex > 0)
+                    TextButton.icon(
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text('Önceki'),
+                      onPressed: _goToPreviousQuestion,
+                    ),
+                  const Spacer(),
+                  ElevatedButton.icon(
+                    icon: Icon(isLastQuestion ? Icons.check_circle : Icons.arrow_forward),
+                    label: Text(isLastQuestion ? 'Bitir' : 'Sonraki'),
+                    onPressed: _selectedAnswers.containsKey(_currentQuestionIndex)
+                        ? (isLastQuestion ? _submitQuiz : _goToNextQuestion)
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
-  }
-
-  Widget _buildBody() {
-    if (_quiz == null || _quizState == QuizState.loading) {
-      return const Center(key: ValueKey('loading'), child: CircularProgressIndicator());
-    }
-
-    switch (_quizState) {
-      case QuizState.intro:
-        return QuizIntro(key: const ValueKey('intro'), quiz: _quiz!, onStartQuiz: _startQuiz);
-      case QuizState.question:
-        return QuestionDisplay(
-          key: ValueKey<int>(_currentQuestionIndex),
-          question: _quiz!.questions[_currentQuestionIndex],
-          currentQuestionIndex: _currentQuestionIndex,
-          totalQuestions: _quiz!.questions.length,
-          onAnswerSelected: _answerQuestion,
-          isAnswered: _isAnswered,
-          selectedAnswerIndex: _selectedAnswerIndex,
-        );
-      case QuizState.results:
-        return QuizResults(
-          key: const ValueKey('results'),
-          quiz: _quiz!,
-          score: _calculateScore(),
-          userAnswers: _userAnswers,
-          onRestartQuiz: _restartQuiz,
-        );
-      default:
-        return const Center(child: CircularProgressIndicator());
-    }
   }
 }

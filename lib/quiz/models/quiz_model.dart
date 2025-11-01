@@ -1,166 +1,97 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// --- Option (Seçenek) Modeli ---
-class Option {
-  String text;
-  bool isCorrect;
-
-  Option({required this.text, this.isCorrect = false});
-
-  Map<String, dynamic> toMap() {
-    return {
-      'text': text,
-      'isCorrect': isCorrect,
-    };
-  }
-
-  factory Option.fromMap(Map<String, dynamic> map) {
-    return Option(
-      text: map['text'] ?? '',
-      isCorrect: map['isCorrect'] ?? false,
-    );
-  }
-}
-
-// --- Question (Soru) Modeli ---
-class Question {
-  final String id;
-  String text;
-  List<Option> options;
-  int correctAnswerIndex;
-
-  Question({
-    this.id = '',
-    required this.text,
-    required this.options,
-    required this.correctAnswerIndex,
-  });
-
-  Map<String, dynamic> toMap() {
-    for (int i = 0; i < options.length; i++) {
-      options[i].isCorrect = (i == correctAnswerIndex);
-    }
-    return {
-      'text': text,
-      'options': options.map((opt) => opt.toMap()).toList(),
-    };
-  }
-
-  factory Question.fromMap(Map<String, dynamic> map, String documentId) {
-    var optionsList = (map['options'] as List<dynamic>? ?? [])
-        .map((optionMap) => Option.fromMap(optionMap))
-        .toList();
-
-    int correctIndex = optionsList.indexWhere((opt) => opt.isCorrect);
-
-    return Question(
-      id: documentId,
-      text: map['text'] ?? '',
-      options: optionsList,
-      correctAnswerIndex: correctIndex,
-    );
-  }
-}
-
-// --- Quiz Modeli ---
 class Quiz {
   final String id;
   final String title;
   final String description;
+  final String topic;
   final String imageUrl;
-  final String category;
   final int durationMinutes;
-  final int totalQuestions;
-  List<Question> questions;
+  final List<Question> questions;
+  final Timestamp createdAt;
 
-  Quiz({
-    this.id = '',
+  const Quiz({
+    required this.id,
     required this.title,
     required this.description,
+    required this.topic,
     required this.imageUrl,
-    required this.category,
-    this.durationMinutes = 0,
-    this.totalQuestions = 0,
-    this.questions = const [],
+    required this.durationMinutes,
+    required this.questions,
+    required this.createdAt,
   });
+
+  factory Quiz.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return Quiz(
+      id: doc.id,
+      title: data['title'] ?? '',
+      description: data['description'] ?? '',
+      topic: data['topic'] ?? '',
+      imageUrl: data['imageUrl'] ?? '',
+      durationMinutes: data['durationMinutes'] ?? 0,
+      questions: (data['questions'] as List<dynamic>? ?? [])
+          .map((q) => Question.fromMap(q as Map<String, dynamic>))
+          .toList(),
+      createdAt: data['createdAt'] as Timestamp? ?? Timestamp.now(),
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
       'title': title,
       'description': description,
+      'topic': topic,
       'imageUrl': imageUrl,
-      'category': category,
       'durationMinutes': durationMinutes,
-      'totalQuestions': questions.length,
+      'questions': questions.map((q) => q.toMap()).toList(),
+      'createdAt': createdAt,
     };
-  }
-
-  factory Quiz.fromMap(Map<String, dynamic> map, String documentId) {
-    return Quiz(
-      id: documentId,
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
-      imageUrl: map['imageUrl'] ?? '',
-      category: map['category'] ?? '',
-      durationMinutes: map['durationMinutes'] ?? 0,
-      totalQuestions: map['totalQuestions'] ?? 0,
-    );
   }
 }
 
-// --- QuizResult (Quiz Sonucu) Modeli ---
-class QuizResult {
-  final String? id;
-  final String quizId;
-  final String userId;
-  final int score;
-  final int totalQuestions;
-  final Timestamp timestamp;
-  final List<int> userAnswers; // TİP GÜNCELLENDİ: List<int>
+class Question {
+  final String text;
+  final List<Option> options;
+  final int correctAnswerIndex;
 
-  // UI'da kullanılacak, veritabanında saklanmayacak alanlar
-  final String quizTitle;
-  final String quizImageUrl;
+  const Question({required this.text, required this.options, required this.correctAnswerIndex});
 
-  QuizResult({
-    this.id,
-    required this.quizId,
-    required this.userId,
-    required this.score,
-    required this.totalQuestions,
-    required this.timestamp,
-    required this.userAnswers, // TİP GÜNCELLENDİ
-    this.quizTitle = '',
-    this.quizImageUrl = '',
-  });
+  factory Question.fromMap(Map<String, dynamic> map) {
+    return Question(
+      text: map['text'] ?? '',
+      options: (map['options'] as List<dynamic>? ?? [])
+          .map((o) => Option.fromMap(o as Map<String, dynamic>))
+          .toList(),
+      correctAnswerIndex: map['correctAnswerIndex'] ?? 0,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
-      'quizId': quizId,
-      'userId': userId,
-      'score': score,
-      'totalQuestions': totalQuestions,
-      'timestamp': timestamp, // Doğrudan Timestamp nesnesi kullanılıyor
-      'userAnswers': userAnswers, // TİP GÜNCELLENDİ
-      // UI için gerekli verileri de sonucun içine gömüyoruz.
-      'quizTitle': quizTitle,
-      'quizImageUrl': quizImageUrl,
+      'text': text,
+      'options': options.map((o) => o.toMap()).toList(),
+      'correctAnswerIndex': correctAnswerIndex,
     };
   }
+}
 
-  factory QuizResult.fromMap(Map<String, dynamic> map, String documentId) {
-    return QuizResult(
-      id: documentId,
-      quizId: map['quizId'] ?? '',
-      userId: map['userId'] ?? '',
-      score: map['score'] ?? 0,
-      totalQuestions: map['totalQuestions'] ?? 0,
-      timestamp: map['timestamp'] as Timestamp? ?? Timestamp.now(),
-      // GÜNCELLENDİ: List<int> olarak okunuyor
-      userAnswers: List<int>.from(map['userAnswers'] ?? []),
-      quizTitle: map['quizTitle'] ?? '', 
-      quizImageUrl: map['quizImageUrl'] ?? '',
+class Option {
+  final String text;
+
+  // isCorrect parametresi kaldırıldı.
+  const Option({required this.text});
+
+  factory Option.fromMap(Map<String, dynamic> map) {
+    return Option(
+      text: map['text'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'text': text,
+    };
   }
 }

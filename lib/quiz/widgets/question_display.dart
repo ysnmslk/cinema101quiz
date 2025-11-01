@@ -1,104 +1,56 @@
 
 import 'package:flutter/material.dart';
-// --- DOĞRU IMPORT --- //
-// Artık Question, Option gibi tüm modeller bu tek dosyadan geliyor.
-import '../models/quiz_model.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
 
 class QuestionDisplay extends StatelessWidget {
   final Question question;
-  final int currentQuestionIndex;
-  final int totalQuestions;
-  final Function(int) onAnswerSelected;
-  final bool isAnswered;
-  final int? selectedAnswerIndex;
+  final int? selectedOptionIndex;
+  final ValueChanged<int> onAnswerSelected;
 
   const QuestionDisplay({
     super.key,
     required this.question,
-    required this.currentQuestionIndex,
-    required this.totalQuestions,
+    required this.selectedOptionIndex,
     required this.onAnswerSelected,
-    required this.isAnswered,
-    required this.selectedAnswerIndex,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Soru ${currentQuestionIndex + 1}/$totalQuestions',
-            style: Theme.of(context).textTheme.titleLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          // --- ALAN ADI GÜNCELLENDİ ---
-          Text(
-            question.text, // 'questionText' yerine 'text'
-            style: Theme.of(context).textTheme.headlineSmall,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          ..._buildAnswerOptions(context),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildAnswerOptions(BuildContext context) {
-    return List.generate(question.options.length, (index) {
-      final option = question.options[index];
-      final isSelected = index == selectedAnswerIndex;
-      // --- KONTROL GÜNCELLENDİ ---
-      // Doğru olup olmadığını artık Option nesnesinin kendisinden öğreniyoruz.
-      final bool isCorrect = option.isCorrect;
-
-      Color? getButtonColor() {
-        if (!isAnswered) return Theme.of(context).colorScheme.primary;
-        if (isSelected) {
-          return isCorrect ? Colors.green : Colors.red;
-        } else if (isCorrect) {
-          // Kullanıcı seçmedi ama doğru cevap buysa hafifçe belirt
-          return Colors.green.withAlpha(150);
-        }
-        // Alakasız ve yanlış seçenekler
-        return Colors.grey[800];
-      }
-
-      Icon? getIcon() {
-        if (!isAnswered) return null;
-        if (isSelected) {
-          return isCorrect ? const Icon(Icons.check_circle) : const Icon(Icons.cancel);
-        } else if (isCorrect) {
-          return const Icon(Icons.check_circle_outline);
-        }
-        return null;
-      }
-
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: ElevatedButton.icon(
-          icon: getIcon() ?? const SizedBox(width: 24), // İkon yoksa boşluk bırak
-          onPressed: isAnswered ? null : () => onAnswerSelected(index),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: getButtonColor(),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-            alignment: Alignment.centerLeft, // Metni ve ikonu sola yasla
-          ).copyWith(
-            elevation: WidgetStateProperty.all(isAnswered && isSelected ? 8 : 4),
-          ),
-          // --- TEXT GÜNCELLENDİ ---
-          label: Text(option.text), // Option nesnesinin metnini kullan
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          question.text,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
-      );
-    });
+        const SizedBox(height: 24),
+        ...List.generate(question.options.length, (index) {
+          final option = question.options[index];
+          final bool isSelected = selectedOptionIndex == index;
+
+          return Card(
+            elevation: isSelected ? 4 : 1,
+            color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
+            child: ListTile(
+              onTap: () => onAnswerSelected(index),
+              leading: CircleAvatar(
+                backgroundColor: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.secondary,
+                child: Text(
+                  String.fromCharCode(65 + index), // A, B, C...
+                  style: TextStyle(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSecondary,
+                  ),
+                ),
+              ),
+              title: Text(option.text),
+            ),
+          );
+        }),
+      ],
+    );
   }
 }
