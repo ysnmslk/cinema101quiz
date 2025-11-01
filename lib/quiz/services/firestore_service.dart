@@ -101,6 +101,7 @@ class FirestoreService {
           if(quiz != null) {
             detailedResults.add(UserQuizResultWithQuiz(result: result, quiz: quiz));
           }
+        // ignore: empty_catches
         } catch (e) {
           
         }

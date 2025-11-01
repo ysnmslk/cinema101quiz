@@ -2,6 +2,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart'; // YERELLEŞTİRME İÇİN EKLENDİ
 
 import 'firebase_options.dart';
 import 'package:myapp/auth/services/auth_service.dart'; 
@@ -13,6 +14,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Tarih formatlaması için Türkçe yerel ayarlarını başlat
+  await initializeDateFormatting('tr_TR', null);
 
   runApp(
     MultiProvider(

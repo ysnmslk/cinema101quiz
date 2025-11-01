@@ -1,3 +1,4 @@
+
 # Proje Mimarisi ve Geliştirme Planı
 
 Bu doküman, Flutter projesinin mimarisini, tasarım prensiplerini ve geliştirme yol haritasını ana hatlarıyla belirtir.
@@ -41,16 +42,21 @@ Bu proje, kullanıcıların çeşitli konularda quizler çözerek bilgi seviyele
 - **Tema Yönetimi (Ayarlar Ekranı):**
   - Kullanıcılar, özel bir "Ayarlar" ekranından **Açık**, **Koyu** veya **Sistem Varsayılanı** temalarından birini seçebilir.
 
-## **Geliştirme Planı (Devam Eden)**
+## **Geliştirme Planı (Yeni Sürüm)**
+
+- **Yenilenen Profil Ekranı:**
+  - "Çıkış Yap" butonu kaldırıldı.
+  - Kullanıcının **çözdüğü toplam test sayısı** ve **toplam doğru cevap sayısı** gibi istatistikler gösterilecek.
+  - Çözülen testlerin bir listesi görüntülenecek. Her bir test, tıklandığında paylaşılabilir bir başarı belgesine yönlendirecek.
+- **Paylaşılabilir Başarı Belgesi:**
+  - Kullanıcının bir testteki başarısını özetleyen (kullanıcı adı, test adı, skor, uzmanlık seviyesi) dinamik olarak oluşturulan bir ekran.
+  - Uzmanlık seviyesi, doğru cevap yüzdesine göre otomatik olarak belirlenecek.
+  - Belge, profesyonel ve paylaşmaya uygun bir tasarıma sahip olacak.
+
+## **Tamamlanan Son Değişiklikler**
 
 - **Ana Ekran İyileştirmeleri:**
   - Quizler son eklenenden başa doğru sıralanacak.
   - Kullanıcının daha önce çözdüğü quizler soluk renkte ve "ÇÖZÜLDÜ" etiketiyle gösterilecek.
   - Son 10 gün içinde eklenen quizlerde "YENİ" etiketi bulunacak.
 
-## **Tamamlanan Son Değişiklikler**
-
-- Projedeki tüm statik analiz hataları ve uyarıları giderildi.
-- Kod tabanı temizlendi ve en iyi pratiklere uygun hale getirildi.
-- Eksik olan `add_quiz_screen.dart`, `quiz_card.dart` ve `theme_provider.dart` dosyaları oluşturuldu.
-- `shared_preferences` paketi eklenerek tema kalıcılığı sağlandı.
