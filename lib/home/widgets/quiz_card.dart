@@ -1,6 +1,7 @@
+
 import 'package:flutter/material.dart';
 import 'package:myapp/quiz/models/quiz_model.dart';
-import 'package:myapp/quiz/widgets/quiz_intro.dart';
+import 'package:myapp/quiz/screens/quiz_intro_screen.dart'; // DOĞRU DOSYA İÇE AKTARILDI
 import 'package:transparent_image/transparent_image.dart';
 
 class QuizCard extends StatelessWidget {
@@ -27,7 +28,8 @@ class QuizCard extends StatelessWidget {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => QuizIntro(quiz: quiz, onStart: () {  },), // HATALI İSİM DÜZELTİLDİ
+              // YÖNLENDİRME DOĞRU WIDGET'A YAPILDI
+              builder: (context) => QuizIntroScreen(quiz: quiz),
             ),
           );
         },
