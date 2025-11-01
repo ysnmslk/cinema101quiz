@@ -24,7 +24,6 @@ class FirestoreService {
       }
     } catch (e) {
       // Hata durumunda veya quiz bulunamazsa null dönebilir
-      print('Error getting quiz by ID: $e');
     }
     return null;
   }
