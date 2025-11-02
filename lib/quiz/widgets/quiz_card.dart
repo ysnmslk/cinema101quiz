@@ -1,119 +1,128 @@
 
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import '../models/quiz_model.dart';
-import '../screens/quiz_screen.dart';
+import 'package:myapp/quiz/models/quiz_models.dart';
+import 'package:myapp/quiz/screens/quiz_screen.dart';
 
 class QuizCard extends StatelessWidget {
   final Quiz quiz;
+  final bool isCompleted;
 
-  const QuizCard({super.key, required this.quiz});
-
-  // Base64 string'ini çözümlemek için yardımcı fonksiyon
-  Uint8List _decodeBase64(String base64String) {
-    try {
-      // URI'nin başındaki "data:image/...;base64," kısmını ayıkla
-      String pureBase64 = base64String.split(',').last;
-      return base64Decode(pureBase64);
-    } catch (e) {
-      // Hata durumunda boş byte listesi döndür
-      return Uint8List(0);
-    }
-  }
-
-  // Hata veya geçersiz URL durumunda gösterilecek varsayılan widget
-  Widget _buildErrorImage() {
-    return Container(
-      color: Colors.grey[200],
-      child: const Center(
-        child: Icon(
-          Icons.quiz_outlined, // Tematik bir ikon
-          size: 40,
-          color: Colors.grey,
-        ),
-      ),
-    );
-  }
+  const QuizCard({super.key, required this.quiz, this.isCompleted = false});
 
   @override
   Widget build(BuildContext context) {
-    Widget imageWidget;
-
-    // Daha güvenli bir URL ayrıştırma yöntemi kullan
-    final uri = Uri.tryParse(quiz.imageUrl);
-
-    if (uri != null && uri.isScheme('data')) {
-      final imageBytes = _decodeBase64(quiz.imageUrl);
-      imageWidget = imageBytes.isNotEmpty
-          ? Image.memory(
-              imageBytes, 
-              width: double.infinity,
-              fit: BoxFit.cover, 
-            )
-          : _buildErrorImage();
-    } else if (uri != null && (uri.isScheme('http') || uri.isScheme('https'))) {
-      imageWidget = Image.network(
-        quiz.imageUrl,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const Center(child: CircularProgressIndicator());
-        },
-        errorBuilder: (context, error, stackTrace) => _buildErrorImage(),
-      );
-    } else {
-      // Geçersiz, boş veya desteklenmeyen URL'ler için varsayılan widget
-      imageWidget = _buildErrorImage();
-    }
-
     return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 5.0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15.0),
-      ),
+      elevation: 4.0,
+      margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 5.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+      clipBehavior: Clip.antiAlias, // Köşeleri yuvarlatılmış resim için
       child: InkWell(
         onTap: () {
+          // Düzeltme: Navigasyon, QuizScreen'e String (id) yerine tam Quiz nesnesini gönderiyor.
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => QuizScreen(quizId: quiz.id),
+              builder: (context) => QuizScreen(quiz: quiz), // quiz nesnesini yolla
             ),
           );
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: imageWidget,
+            // Resim ve Tamamlandı ikonu
+            Stack(
+              children: [
+                Hero(
+                  tag: quiz.id, // Animasyon için Hero widget'ı
+                  child: Image.network(
+                    quiz.imageUrl,
+                    width: double.infinity,
+                    height: 150,
+                    fit: BoxFit.cover,
+                    // Yüklenme ve hata durumları için builder'lar
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 150,
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 150,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.broken_image, color: Colors.grey, size: 50),
+                    ),
+                  ),
+                ),
+                // Eğer quiz tamamlandıysa, sağ üst köşeye bir ikon ekle
+                if (isCompleted)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check, color: Colors.white, size: 20),
+                    ),
+                  ),
+              ],
             ),
+            // Başlık ve Açıklama
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     quiz.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8.0),
                   Text(
                     quiz.description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 12.0),
+                  // Etiket ve Süre bilgisi
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Chip(
+                        label: Text(quiz.topic),
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Icon(Icons.timer_outlined, size: 18, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${quiz.durationMinutes} dk',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -1,8 +1,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:myapp/add_quiz/screens/add_edit_question_screen.dart';
-import 'package:myapp/quiz/models/quiz_model.dart';
-import 'package:myapp/quiz/services/firestore_service.dart';
+import 'package:myapp/quiz/models/quiz_models.dart';
+import 'package:myapp/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddQuizScreen extends StatefulWidget {
@@ -34,12 +34,8 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
     super.dispose();
   }
 
-  void _navigateToAddQuestion() async {
-    final newQuestion = await Navigator.of(context).push<Question>(
-      MaterialPageRoute(
-        builder: (context) => const AddEditQuestionScreen(),
-      ),
-    );
+  void _navigateAndAddQuestion() async {
+    final newQuestion = await showAddEditQuestionDialog(context);
 
     if (newQuestion != null && mounted) {
       setState(() {
@@ -48,60 +44,63 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
     }
   }
 
-  void _navigateToEditQuestion(int index) async {
-    final editedQuestion = await Navigator.of(context).push<Question>(
-      MaterialPageRoute(
-        builder: (context) => AddEditQuestionScreen(question: _questions[index]),
-      ),
+  void _editQuestion(int index) async {
+    final updatedQuestion = await showAddEditQuestionDialog(
+      context,
+      question: _questions[index],
     );
 
-    if (editedQuestion != null && mounted) {
+    if (updatedQuestion != null && mounted) {
       setState(() {
-        _questions[index] = editedQuestion;
+        _questions[index] = updatedQuestion;
       });
     }
   }
-  
-  void _deleteQuestion(int index) {
+
+  void _removeQuestion(int index) {
     setState(() {
       _questions.removeAt(index);
     });
   }
 
+  void _submitQuiz() async {
+    if (_formKey.currentState!.validate()) {
+      if (_questions.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lütfen en az bir soru ekleyin.')),
+        );
+        return;
+      }
 
-  void _submitForm() async {
-    final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-
-    if (_formKey.currentState!.validate() && _questions.isNotEmpty) {
-      _formKey.currentState!.save();
-
-      final newQuiz = Quiz(
-        id: '',
+      final quiz = Quiz(
+        id: '', // Firestore oluşturacak
         title: _titleController.text,
         description: _descriptionController.text,
         topic: _topicController.text,
-        imageUrl: _imageUrlController.text,
+        imageUrl: _imageUrlController.text.isNotEmpty 
+            ? _imageUrlController.text 
+            : 'https://firebasestorage.googleapis.com/v0/b/quiz-app-ca957.appspot.com/o/images%2Fplaceholder.png?alt=media&token=85333555-3224-47c3-a0a3-4061e479c3d7',
         durationMinutes: int.tryParse(_durationController.text) ?? 10,
-        questions: _questions,
         createdAt: Timestamp.now(),
       );
 
       try {
-        await _firestoreService.addQuiz(newQuiz);
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Quiz başarıyla eklendi!')),
+        await _firestoreService.createQuiz(quiz, _questions);
+        
+        // Düzeltme: `mounted` kontrolü eklendi.
+        if (!mounted) return;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Quiz başarıyla oluşturuldu!')),
         );
-        navigator.pop();
+        Navigator.of(context).pop();
       } catch (e) {
-        messenger.showSnackBar(
+        // Düzeltme: `mounted` kontrolü eklendi.
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Hata: $e')),
         );
       }
-    } else if (_questions.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Lütfen en az bir soru ekleyin.')),
-      );
     }
   }
 
@@ -109,110 +108,98 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Yeni Quiz Ekle'),
+        title: const Text('Yeni Quiz Oluştur'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _submitQuiz,
+            tooltip: "Quiz'i Kaydet",
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Başlık', border: OutlineInputBorder()),
-                validator: (value) => value!.isEmpty ? 'Başlık boş olamaz' : null,
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Açıklama', border: OutlineInputBorder()),
-                validator: (value) => value!.isEmpty ? 'Açıklama boş olamaz' : null,
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _topicController,
-                decoration: const InputDecoration(labelText: 'Konu', border: OutlineInputBorder()),
-                validator: (value) => value!.isEmpty ? 'Konu boş olamaz' : null,
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _imageUrlController,
-                decoration: const InputDecoration(labelText: 'Resim URL', border: OutlineInputBorder()),
-                validator: (value) => value!.isEmpty ? 'Resim URL\'si boş olamaz' : null,
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _durationController,
-                decoration: const InputDecoration(labelText: 'Süre (dakika)', border: OutlineInputBorder()),
-                keyboardType: TextInputType.number,
-                validator: (value) => value!.isEmpty ? 'Süre boş olamaz' : null,
-              ),
-              const Divider(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Sorular (${_questions.length})', style: Theme.of(context).textTheme.titleLarge),
-                  ElevatedButton.icon(
-                    onPressed: _navigateToAddQuestion,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Yeni Soru Ekle'),
-                  ),
-                ],
-              ),
-              if (_questions.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24.0),
-                  child: Center(child: Text('Henüz soru eklenmedi.')),
-                )
-              else
-                _buildQuestionsList(),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _submitForm,
-                style: ElevatedButton.styleFrom( // Düzeltildi: styleFrom
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                ),
-                child: const Text('Quiz\'i Kaydet'),
-              ),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTextField(_titleController, 'Başlık'),
+                _buildTextField(_descriptionController, 'Açıklama'),
+                _buildTextField(_topicController, 'Konu (örn: Tarih)'),
+                _buildTextField(_imageUrlController, 'Resim URL (isteğe bağlı)'),
+                _buildTextField(_durationController, 'Süre (dakika)', keyboardType: TextInputType.number),
+                const SizedBox(height: 20),
+                _buildQuestionsSection(),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildQuestionsList() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _questions.length,
-      itemBuilder: (context, index) {
-        final question = _questions[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ListTile(
-            title: Text(question.text, maxLines: 2, overflow: TextOverflow.ellipsis,),
-            subtitle: Text('${question.options.length} seçenek'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-                  onPressed: () => _navigateToEditQuestion(index),
-                  tooltip: 'Düzenle',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: () => _deleteQuestion(index),
-                  tooltip: 'Sil',
-                ),
-              ],
+  Widget _buildTextField(TextEditingController controller, String label, {TextInputType? keyboardType}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+        keyboardType: keyboardType,
+        validator: (value) {
+          if (controller != _imageUrlController && (value == null || value.isEmpty)) {
+            return '$label boş olamaz';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuestionsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Sorular', style: Theme.of(context).textTheme.headlineSmall),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Soru Ekle'),
+              onPressed: _navigateAndAddQuestion,
             ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (_questions.isEmpty)
+          const Center(child: Text('Henüz soru eklenmedi.'))
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _questions.length,
+            itemBuilder: (context, index) {
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                child: ListTile(
+                  title: Text(_questions[index].text),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(icon: const Icon(Icons.edit), onPressed: () => _editQuestion(index)),
+                      IconButton(icon: const Icon(Icons.delete), onPressed: () => _removeQuestion(index)),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
-        );
-      },
+      ],
     );
   }
 }

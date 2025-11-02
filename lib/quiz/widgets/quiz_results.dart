@@ -1,110 +1,86 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_model.dart';
+import 'package:myapp/quiz/models/quiz_models.dart';
 
-class QuizResults extends StatelessWidget {
+class QuizResultScreen extends StatelessWidget {
   final Quiz quiz;
-  final Map<int, int> selectedAnswers;
-  final VoidCallback onRetake;
+  final int score;
 
-  const QuizResults({
-    super.key,
-    required this.quiz,
-    required this.selectedAnswers,
-    required this.onRetake,
-  });
+  const QuizResultScreen({super.key, required this.quiz, required this.score});
 
   @override
   Widget build(BuildContext context) {
-    int correctAnswers = 0;
-    selectedAnswers.forEach((questionIndex, selectedOptionIndex) {
-      if (selectedOptionIndex == quiz.questions[questionIndex].correctAnswerIndex) {
-        correctAnswers++;
-      }
-    });
-
-    double scorePercentage = (correctAnswers / quiz.questions.length) * 100;
+    // Soruların gerçekten yüklenip yüklenmediğini kontrol et
+    final int totalQuestions = quiz.questions!.length;
+    final double percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${quiz.title} Sonuçları'),
-        automaticallyImplyLeading: false,
+        title: Text('${quiz.title} Sonucu'),
+        automaticallyImplyLeading: false, // Geri tuşunu kaldır
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Tebrikler!',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Puanınız: $correctAnswers / ${quiz.questions.length}',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            Text(
-              'Başarı: ${scorePercentage.toStringAsFixed(1)}%',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 40),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: onRetake,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Tekrar Çöz'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.secondary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).popUntil((route) => route.isFirst);
-                      },
-                      icon: const Icon(Icons.home),
-                      label: const Text('Ana Ekrana Dön'),
-                    ),
-                  ),
-                ],
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Tebrikler!',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
-            ),
-            const Divider(height: 40),
-            const Text('Cevapların İncelenmesi'),
-            Expanded(
-              child: ListView.builder(
-                itemCount: quiz.questions.length,
-                itemBuilder: (context, index) {
-                  final question = quiz.questions[index];
-                  final selectedOptIndex = selectedAnswers[index];
-                  final correctOptIndex = question.correctAnswerIndex;
-                  final bool isCorrect = selectedOptIndex == correctOptIndex;
-
-                  return Card(
-                    color: isCorrect ? Colors.green.shade50 : Colors.red.shade50,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: ListTile(
-                      leading: Icon(
-                        isCorrect ? Icons.check_circle : Icons.cancel,
-                        color: isCorrect ? Colors.green : Colors.red,
-                      ),
-                      title: Text(question.text),
-                      subtitle: selectedOptIndex != null
-                          ? Text('Senin cevabın: ${question.options[selectedOptIndex].text}')
-                          : const Text('Cevaplanmadı'),
+              const SizedBox(height: 16),
+              Text(
+                "Quiz'i tamamladın.", // Sabit metin
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: 150,
+                height: 150,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CircularProgressIndicator(
+                      value: percentage / 100,
+                      strokeWidth: 10,
+                      backgroundColor: Colors.grey.shade300,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade600),
                     ),
-                  );
+                    Center(
+                      child: Text(
+                        '%${percentage.toStringAsFixed(0)}',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Text(
+                // Null check eklendi
+                totalQuestions > 0 
+                  ? '$totalQuestions sorudan $score tanesini doğru bildin.'
+                  : 'Skor hesaplanamadı (soru yok).',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.home),
+                label: const Text('Ana Sayfaya Dön'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  textStyle: const TextStyle(fontSize: 18),
+                ),
+                onPressed: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
                 },
               ),
-            )
-          ],
+            ],
+          ),
         ),
       ),
     );

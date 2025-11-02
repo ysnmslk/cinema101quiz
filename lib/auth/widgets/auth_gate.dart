@@ -2,7 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:myapp/auth/screens/login_screen.dart';
-import 'package:myapp/home/screens/home_screen.dart';
+import 'package:myapp/home/screens/main_screen.dart'; // MainScreen'e yönlendir
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -12,14 +12,11 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Kullanıcı oturum açmış
-        if (snapshot.hasData) {
-          return const HomeScreen(); // Ana ekrana yönlendir
+        if (!snapshot.hasData) {
+          return const LoginScreen();
         }
-        // Kullanıcı oturum açmamış
-        else {
-          return const LoginScreen(); // Giriş ekranına yönlendir
-        }
+        // Kullanıcı giriş yapmışsa, artık BottomNavBar içeren MainScreen'i göster.
+        return const MainScreen(); 
       },
     );
   }

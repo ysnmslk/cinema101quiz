@@ -1,56 +1,90 @@
 
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:myapp/auth/services/auth_service.dart'; // AuthService importu
+import 'package:provider/provider.dart';
+import 'package:myapp/auth/services/auth_service.dart'; // Sadece auth_service'i import ediyoruz.
 
-
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  bool _isLoading = false;
+
+  // DÜZELTME: Bu metot artık doğrudan AuthService'i çağıracak.
+  void _login(Future<void> Function() loginMethod) async {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await loginMethod();
+      // Başarılı girişten sonra navigasyon, AuthWrapper tarafından yönetilecek.
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Giriş başarısız oldu: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final AuthService authService = AuthService();
+    // DÜZELTME: AuthService'i Provider ile alıyoruz.
+    final authService = Provider.of<AuthService>(context, listen: false);
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Giriş Yap'),
+        elevation: 0,
+        centerTitle: true,
+      ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
-              const Text(
-                'Uygulamaya Hoş Geldiniz',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const FlutterLogo(size: 100),
+              const SizedBox(height: 48.0),
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator())
+              else
+                Column(
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.g_mobiledata), // Google ikonu
+                      // DÜZELTME: AuthService'deki doğru metodu çağırıyoruz.
+                      onPressed: () => _login(authService.signInWithGoogle),
+                      label: const Text('Google ile Giriş Yap'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                    ),
+                    const SizedBox(height: 12.0),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.person_outline),
+                      // DÜZELTME: AuthService'deki doğru metodu çağırıyoruz.
+                      onPressed: () => _login(authService.signInAnonymously),
+                      label: const Text('Anonim Olarak Devam Et'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade700,
+                        minimumSize: const Size(double.infinity, 50),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Başlamak için lütfen giriş yapın.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const Spacer(),
-              ElevatedButton.icon(
-                icon: const FaIcon(FontAwesomeIcons.google, color: Colors.white),
-                label: const Text('Google ile Giriş Yap'),
-                onPressed: () {
-                  // Butona basıldığında giriş işlemini başlat
-                  authService.signInWithGoogle();
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50), // Butonun genişliğini ayarla
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 40),
             ],
           ),
         ),

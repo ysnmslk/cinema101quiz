@@ -2,12 +2,13 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/date_symbol_data_local.dart'; // YERELLEŞTİRME İÇİN EKLENDİ
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'firebase_options.dart';
 import 'package:myapp/auth/services/auth_service.dart'; 
 import 'package:myapp/auth/widgets/auth_gate.dart';
 import 'package:myapp/theme/theme_provider.dart';
+import 'package:myapp/firestore_service.dart'; // FirestoreService'i import et
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +16,6 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Tarih formatlaması için Türkçe yerel ayarlarını başlat
   await initializeDateFormatting('tr_TR', null);
 
   runApp(
@@ -23,6 +23,8 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         Provider<AuthService>(create: (_) => AuthService()),
+        // DÜZELTME: FirestoreService'i Provider listesine ekle
+        Provider<FirestoreService>(create: (_) => FirestoreService()), 
       ],
       child: const MyApp(),
     ),
@@ -34,12 +36,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Consumer, ThemeProvider'daki değişiklikleri dinler.
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
           title: 'Quiz App',
-          // Temalar artık doğrudan themeProvider'dan geliyor.
           theme: themeProvider.lightTheme, 
           darkTheme: themeProvider.darkTheme,
           themeMode: themeProvider.themeMode,
