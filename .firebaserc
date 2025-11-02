@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "cinema101-af1cd"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

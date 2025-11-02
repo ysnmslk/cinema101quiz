@@ -61,9 +61,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDCGr8BwrSAyPTyEDbnR5hrujPiDHy9hEo',
-    appId: '1:633516057345:android:1e3c7a7f758f1bda91f100',
+    appId: '1:633516057345:android:4976be892777ec7b91f100',
     messagingSenderId: '633516057345',
     projectId: 'cinema101-af1cd',
     storageBucket: 'cinema101-af1cd.firebasestorage.app',
   );
+
 }

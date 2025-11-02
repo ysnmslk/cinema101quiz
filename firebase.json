@@ -1,11 +1,1 @@
-{
-  "firestore": {
-    "database": "(default)",
-    "location": "eur3",
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
-  "emulators": {
-    "singleProjectMode": true
-  }
-}
+{"firestore":{"database":"(default)","location":"eur3","rules":"firestore.rules","indexes":"firestore.indexes.json"},"emulators":{"singleProjectMode":true},"hosting":{"public":"build/web","ignore":["firebase.json","**/.*","**/node_modules/**"],"rewrites":[{"source":"**","destination":"/index.html"}]},"flutter":{"platforms":{"android":{"default":{"projectId":"cinema101-af1cd","appId":"1:633516057345:android:4976be892777ec7b91f100","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"cinema101-af1cd","configurations":{"android":"1:633516057345:android:4976be892777ec7b91f100","web":"1:633516057345:web:393d68c5c0c21d3991f100"}}}}}}
