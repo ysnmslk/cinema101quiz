@@ -1,3 +1,4 @@
+
 import 'dart:developer' as developer;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -5,10 +6,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // HATA 1 & 2 ÇÖZÜMÜ:
-  // 'serverClientId' parametresi web içindir. Mobil platformlarda
-  // GoogleSignIn() yapıcısı parametresiz çağrılmalıdır.
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  // Paketler google_sign_in: 6.2.1 ve uyumlu firebase versiyonlarına düşürüldü.
+  // Bu versiyon için Android'de 'serverClientId' hala gereklidir.
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '633516057345-lhnu1p91f2bq8m0js3f69jlkmtu8e7mp.apps.googleusercontent.com',
+  );
 
   Stream<User?> get userStream => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
@@ -19,14 +21,13 @@ class AuthService {
       return userCredential.user;
     } on FirebaseAuthException catch (e, s) {
       developer.log('Anonim giriş hatası', name: 'AuthService', error: e, stackTrace: s);
-      // UI katmanının hatayı yönetebilmesi için rethrow eklemeyi düşünebilirsiniz.
-      rethrow; 
+      return null;
     }
   }
 
   Future<User?> signInWithGoogle() async {
     try {
-      // Hata 2 (signIn) artık çözülmüş olmalı.
+      // google_sign_in: 6.2.1 versiyonu için doğru metot .signIn() metodudur.
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -34,26 +35,12 @@ class AuthService {
         return null;
       }
 
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-      // HATA 3 ÇÖZÜMÜ:
-      // google_sign_in v6+ (ve 7.x) 'de token'lar nullable (String?) tipindedir.
-      // Firebase'e göndermeden önce null kontrolü yapılmalıdır.
-      final String? accessToken = googleAuth.accessToken;
-      final String? idToken = googleAuth.idToken;
-
-      if (accessToken == null || idToken == null) {
-        // Token alınamazsa hata fırlat.
-        developer.log('Google auth tokens are null', name: 'AuthService');
-        throw FirebaseAuthException(
-          code: 'google-sign-in-token-null',
-          message: 'Google authentication tokens are null.',
-        );
-      }
-
+      // Bu versiyon için kimlik bilgisi hem accessToken hem de idToken gerektirir.
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: accessToken, // Artık null değil
-        idToken: idToken,     // Artık null değil
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
@@ -61,10 +48,10 @@ class AuthService {
 
     } on FirebaseAuthException catch (e, s) {
       developer.log('Google ile giriş sırasında Firebase hatası', name: 'AuthService', error: e, stackTrace: s);
-      rethrow; // Hatayı UI katmanının işlemesi için yeniden fırlat.
+      rethrow; 
     } catch (e, s) {
       developer.log('Google ile giriş sırasında genel hata', name: 'AuthService', error: e, stackTrace: s);
-      rethrow; // Hatayı UI katmanının işlemesi için yeniden fırlat.
+      rethrow; 
     }
   }
 
@@ -96,7 +83,6 @@ class AuthService {
 
   Future<void> signOut() async {
     try {
-      // Farklı hesap seçimine izin vermek için Google'dan da çıkış yap.
       await _googleSignIn.signOut();
       await _auth.signOut();
     } catch (e, s) {
