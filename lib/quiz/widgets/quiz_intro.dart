@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_models.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
+
 
 
 class QuizIntro extends StatelessWidget {
@@ -60,7 +61,7 @@ class QuizIntro extends StatelessWidget {
                   Wrap(
                     spacing: 8.0,
                     children: [
-                      Chip(label: Text('${quiz.questions?.length} Soru')),
+                      Chip(label: Text('${quiz.questions.length} Soru')),
                       Chip(label: Text('${quiz.durationMinutes} Dakika')),
                       Chip(label: Text(quiz.topic)),
                     ],

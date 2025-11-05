@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_models.dart';
-import 'package:myapp/quiz/screens/quiz_screen.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
+import 'package:myapp/screens/quiz_screen.dart';
 
 class QuizCard extends StatelessWidget {
   final Quiz quiz;
@@ -21,8 +21,7 @@ class QuizCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              // Düzeltme: `quizId` yerine `quiz` nesnesinin tamamı gönderiliyor.
-              builder: (context) => QuizScreen(quiz: quiz),
+              builder: (context) => QuizScreen(quizId: quiz.id),
             ),
           );
         },

@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_models.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
+
 
 class QuestionDisplay extends StatelessWidget {
   final Question question;

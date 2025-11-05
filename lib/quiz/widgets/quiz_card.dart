@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_models.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
+
 import 'package:myapp/quiz/screens/quiz_screen.dart';
 
 class QuizCard extends StatelessWidget {
@@ -22,7 +23,7 @@ class QuizCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => QuizScreen(quiz: quiz), // quiz nesnesini yolla
+              builder: (context) => QuizScreen(quiz: quiz, quizId: '',), // quiz nesnesini yolla
             ),
           );
         },

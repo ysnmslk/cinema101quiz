@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_models.dart';
+import 'package:myapp/quiz/models/option.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
+
 
 Future<Question?> showAddEditQuestionDialog(
   BuildContext context, {
@@ -89,6 +91,7 @@ class _AddEditQuestionDialogState extends State<AddEditQuestionDialog> {
         id: widget.question?.id ?? '',
         text: _questionController.text,
         options: options,
+         correctAnswerIndex: null,
       );
       Navigator.of(context).pop(newQuestion);
     }
@@ -125,19 +128,24 @@ class _AddEditQuestionDialogState extends State<AddEditQuestionDialog> {
 
   List<Widget> _buildOptionFields() {
     return List<Widget>.generate(_optionControllers.length, (index) {
-      // Düzeltme: `RadioListTile` kullanılarak uyarı giderildi.
-      return RadioListTile<int>(
-        title: TextFormField(
-          controller: _optionControllers[index],
-          decoration: InputDecoration(labelText: 'Seçenek ${index + 1}'),
-        ),
-        value: index,
-        groupValue: _selectedCorrectIndex,
-        onChanged: (int? value) {
-          setState(() {
-            _selectedCorrectIndex = value;
-          });
-        },
+      return Row(
+        children: [
+          Radio<int>(
+            value: index,
+            groupValue: _selectedCorrectIndex,
+            onChanged: (int? value) {
+              setState(() {
+                _selectedCorrectIndex = value;
+              });
+            },
+          ),
+          Expanded(
+            child: TextFormField(
+              controller: _optionControllers[index],
+              decoration: InputDecoration(labelText: 'Seçenek ${index + 1}'),
+            ),
+          ),
+        ],
       );
     });
   }

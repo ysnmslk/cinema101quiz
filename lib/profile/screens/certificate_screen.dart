@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:myapp/quiz/models/quiz_models.dart';
-import 'package:share_plus/share_plus.dart';
 
 class CertificateScreen extends StatefulWidget {
   final QuizResultDetails resultDetails;
@@ -91,37 +90,12 @@ class _CertificateScreenState extends State<CertificateScreen> {
                   style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 const SizedBox(height: 40),
-                // Paylaşım butonu
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.share),
-                  label: const Text('Sosyal Medyada Paylaş'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  onPressed: () => _shareCertificate(quiz, result, scorePercentage, formattedDate),
-                ),
+                Image.asset('assets/logo.png', height: 60),
               ],
             ),
           ),
         ),
       ),
     );
-  }
-
-  void _shareCertificate(Quiz quiz, UserQuizResult result, double scorePercentage, String formattedDate) {
-    final shareText = '''
-🎉 BAŞARI SERTİFİKASI 🎉
-
-${quiz.title.toUpperCase()}
-${quiz.topic}
-
-Puan: ${result.score}/${result.totalQuestions} (%${scorePercentage.toStringAsFixed(1)})
-Tarih: $formattedDate
-
-Bu quizi başarıyla tamamladım! 🏆
-''';
-
-    Share.share(shareText, subject: '${quiz.title} - Başarı Sertifikası');
   }
 }

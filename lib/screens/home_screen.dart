@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../auth/services/auth_service.dart';
-import '../../quiz/models/quiz_model.dart';
-import '../../quiz/services/quiz_service.dart';
-import '../widgets/quiz_card.dart';
+import '../auth/services/auth_service.dart';
+import '../home/widgets/quiz_card.dart';
+import '../quiz/models/quiz_model.dart';
+import '../quiz/services/quiz_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
