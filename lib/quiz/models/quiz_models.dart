@@ -170,6 +170,7 @@ class Option {
 }
 
 // Düzeltme: Kullanıcının bir quiz'e verdiği cevabı temsil eden model
+//Değişikler tamam
 class UserQuizResult {
   final String quizId;
   final int score;
