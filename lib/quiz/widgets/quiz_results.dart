@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_models.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
 
 class QuizResultScreen extends StatelessWidget {
   final Quiz quiz;
@@ -11,7 +11,7 @@ class QuizResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Soruların gerçekten yüklenip yüklenmediğini kontrol et
-    final int totalQuestions = quiz.questions!.length;
+    final int totalQuestions = quiz.questions.length;
     final double percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
 
     return Scaffold(

@@ -1,6 +1,5 @@
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ThemeProvider with ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
@@ -19,18 +18,18 @@ class ThemeProvider with ChangeNotifier {
       case ThemeMode.dark:
         return 'Koyu';
       case ThemeMode.system:
-      return 'Sistem';
+        return 'Sistem';
     }
   }
 
-  // TÜR DÜZELTİLDİ: Color -> MaterialAccentColor
   static const MaterialAccentColor _primarySeedColor = Colors.blueAccent;
 
-  static final TextTheme _appTextTheme = TextTheme(
-    displayLarge: GoogleFonts.oswald(fontSize: 57, fontWeight: FontWeight.bold),
-    titleLarge: GoogleFonts.roboto(fontSize: 22, fontWeight: FontWeight.w500),
-    bodyMedium: GoogleFonts.openSans(fontSize: 14),
-    labelLarge: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.w500),
+  // Düzeltme: 'final' yerine 'const' kullanarak uyarıyı giderin ve performansı artırın.
+  static const TextTheme _appTextTheme = TextTheme(
+    displayLarge: TextStyle(fontSize: 57, fontWeight: FontWeight.bold),
+    titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
+    bodyMedium: TextStyle(fontSize: 14),
+    labelLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
   );
 
   ThemeData get lightTheme => ThemeData(
@@ -40,10 +39,10 @@ class ThemeProvider with ChangeNotifier {
           brightness: Brightness.light,
         ),
         textTheme: _appTextTheme,
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           backgroundColor: _primarySeedColor,
           foregroundColor: Colors.white,
-          titleTextStyle: GoogleFonts.oswald(fontSize: 24, fontWeight: FontWeight.bold),
+          titleTextStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -51,7 +50,7 @@ class ThemeProvider with ChangeNotifier {
             backgroundColor: _primarySeedColor,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            textStyle: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.w500),
+            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
         ),
       );
@@ -66,15 +65,15 @@ class ThemeProvider with ChangeNotifier {
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.grey[900],
           foregroundColor: Colors.white,
-          titleTextStyle: GoogleFonts.oswald(fontSize: 24, fontWeight: FontWeight.bold),
+          titleTextStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             foregroundColor: Colors.black,
-            backgroundColor: _primarySeedColor.shade200, // Artık bu satır geçerli
+            backgroundColor: _primarySeedColor.shade200,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            textStyle: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.w500),
+            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
         ),
       );

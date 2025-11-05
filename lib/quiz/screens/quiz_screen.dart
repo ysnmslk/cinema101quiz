@@ -1,15 +1,15 @@
 
 import 'package:flutter/material.dart';
+import 'package:myapp/profile/services/firestore_service.dart';
+import 'package:myapp/quiz/models/quiz_model.dart';
 import 'package:provider/provider.dart';
 import 'package:myapp/auth/services/auth_service.dart';
-import 'package:myapp/firestore_service.dart';
-import 'package:myapp/quiz/models/quiz_models.dart';
-import 'package:myapp/quiz/widgets/quiz_results.dart';
+
 
 class QuizScreen extends StatefulWidget {
   final Quiz quiz;
 
-  const QuizScreen({super.key, required this.quiz});
+  const QuizScreen({super.key, required this.quiz, required String quizId});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -27,13 +27,19 @@ class _QuizScreenState extends State<QuizScreen> {
     _questionsFuture = _loadQuestions();
   }
 
+  // DÜZELTME: Sorular doğrudan quiz nesnesinden alınıyor.
   Future<List<Question>> _loadQuestions() async {
-    final questions = await context.read<FirestoreService>().getQuestionsForQuiz(widget.quiz.id);
-    // Soru sayısı kadar null içeren bir liste oluştur
+    // Firestore'a tekrar gitmek yerine widget'tan gelen soruları kullan
+    final questions = List<Question>.from(widget.quiz.questions);
+    
+    // Cevaplar için bir liste oluştur
     _selectedAnswers = List.generate(questions.length, (_) => null);
+    
     // Soruları karıştır
     questions.shuffle();
-    return questions;
+    
+    // Gelecekteki bir değer olarak döndür
+    return Future.value(questions);
   }
 
   void _answerQuestion(int selectedOptionIndex, List<Question> questions) {
@@ -59,11 +65,11 @@ class _QuizScreenState extends State<QuizScreen> {
         _currentQuestionIndex++;
       });
     } else {
-      _showResults();
+      _showResults(totalQuestions);
     }
   }
 
-  void _showResults() async {
+  void _showResults(int totalQuestions) async {
     final userId = context.read<AuthService>().currentUser?.uid ?? '';
 
     if (userId.isNotEmpty) {
@@ -71,11 +77,10 @@ class _QuizScreenState extends State<QuizScreen> {
             userId,
             widget.quiz.id,
             _score,
-            widget.quiz.questions!.length,
+            totalQuestions, // Düzeltme: `widget.quiz.questions!.length` yerine `totalQuestions`
           );
     }
     
-    // Düzeltme: `mounted` kontrolü eklendi.
     if (!mounted) return;
 
     Navigator.pushReplacement(
@@ -84,6 +89,7 @@ class _QuizScreenState extends State<QuizScreen> {
         builder: (context) => QuizResultScreen(
           quiz: widget.quiz,
           score: _score,
+          totalQuestions: totalQuestions, // Düzeltme: `totalQuestions` gönderiliyor
         ),
       ),
     );
@@ -106,7 +112,7 @@ class _QuizScreenState extends State<QuizScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text(snapshot.hasError ? 'Hata: ${snapshot.error}' : 'Soru bulunamadı.'));
+            return Center(child: Text(snapshot.hasError ? 'Hata: ${snapshot.error}' : 'Bu quiz için soru bulunamadı.'));
           }
 
           final questions = snapshot.data!;
@@ -117,6 +123,15 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildQuizBody(List<Question> questions) {
+    // Eğer index sınır dışındaysa, sonuç ekranını göster
+    if (_currentQuestionIndex >= questions.length) {
+      // Bu durumun yaşanmaması gerekir, ama bir güvenlik önlemi.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showResults(questions.length);
+      });
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final question = questions[_currentQuestionIndex];
     final bool isAnswered = _selectedAnswers[_currentQuestionIndex] != null;
 
@@ -153,20 +168,26 @@ class _QuizScreenState extends State<QuizScreen> {
 
                 if (isAnswered) {
                   if (option.isCorrect) {
-                    // Düzeltme: `withOpacity` yerine `withAlpha` kullanıldı.
-                    tileColor = Colors.green.withAlpha(75); // ~30% opacity
+                    tileColor = Colors.green.withAlpha(75);
                     trailingIcon = const Icon(Icons.check, color: Colors.green);
                   } else if (isSelected) {
-                    // Düzeltme: `withOpacity` yerine `withAlpha` kullanıldı.
-                    tileColor = Colors.red.withAlpha(75); // ~30% opacity
+                    tileColor = Colors.red.withAlpha(75);
                     trailingIcon = const Icon(Icons.close, color: Colors.red);
                   }
                 }
 
                 return Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isSelected ? (option.isCorrect ? Colors.green : Colors.red) : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
                   color: tileColor,
                   child: ListTile(
-                    title: Text(option.text),
+                    title: Text(option.text, style: Theme.of(context).textTheme.titleMedium),
                     onTap: isAnswered ? null : () => _answerQuestion(index, questions),
                     trailing: trailingIcon,
                   ),
@@ -176,6 +197,71 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
           const SizedBox(height: 20),
         ],
+      ),
+    );
+  }
+}
+
+// Sonuç ekranını da düzelt
+class QuizResultScreen extends StatelessWidget {
+  final Quiz quiz;
+  final int score;
+  final int totalQuestions;
+
+  const QuizResultScreen({
+    super.key,
+    required this.quiz,
+    required this.score,
+    required this.totalQuestions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final double percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${quiz.title} Sonuçları'),
+        automaticallyImplyLeading: false,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Tebrikler!', style: Theme.of(context).textTheme.headlineMedium),
+              const SizedBox(height: 16),
+              Text(
+                "Quiz'i tamamladın.",
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              Text(
+                'Skorun: $score / $totalQuestions',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Başarı: ${percentage.toStringAsFixed(1)}%',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.home),
+                label: const Text('Ana Sayfaya Dön'),
+                onPressed: () {
+                  // Düzeltme: Ana ekrana (MainScreen) dönmek için `pushAndRemoveUntil` kullan
+                  Navigator.of(context).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

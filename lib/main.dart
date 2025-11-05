@@ -1,34 +1,25 @@
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:myapp/auth/services/auth_service.dart';
+import 'package:myapp/auth/services/firebase_auth_service.dart';
+import 'package:myapp/profile/services/firebase_firestore_service.dart';
+import 'package:myapp/profile/services/firestore_service.dart';
+import 'package:myapp/quiz/screens/add_quiz_screen.dart';
+import 'package:myapp/quiz/services/firebase_quiz_service.dart';
+import 'package:myapp/quiz/services/quiz_service.dart';
+import 'package:myapp/screens/home_screen.dart';
+import 'package:myapp/screens/login_screen.dart';
+import 'package:myapp/screens/profile_screen.dart';
+import 'package:myapp/screens/quiz_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/date_symbol_data_local.dart';
-
-import 'firebase_options.dart';
-import 'package:myapp/auth/services/auth_service.dart'; 
-import 'package:myapp/auth/widgets/auth_gate.dart';
-import 'package:myapp/theme/theme_provider.dart';
-import 'package:myapp/firestore_service.dart'; // FirestoreService'i import et
+import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  await initializeDateFormatting('tr_TR', null);
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        Provider<AuthService>(create: (_) => AuthService()),
-        // DÜZELTME: FirestoreService'i Provider listesine ekle
-        Provider<FirestoreService>(create: (_) => FirestoreService()), 
-      ],
-      child: const MyApp(),
-    ),
-  );
+  await Firebase.initializeApp();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -36,17 +27,94 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return MaterialApp(
-          title: 'Quiz App',
-          theme: themeProvider.lightTheme, 
-          darkTheme: themeProvider.darkTheme,
-          themeMode: themeProvider.themeMode,
-          home: const AuthGate(),
-          debugShowCheckedModeBanner: false,
-        );
-      },
+    return MultiProvider(
+      providers: [
+        Provider<AuthService>(
+          create: (_) => FirebaseAuthService(),
+        ),
+        Provider<QuizService>(
+          create: (_) => FirebaseQuizService(),
+        ),
+        Provider<FirestoreService>(
+          create: (_) => FirebaseFirestoreService(),
+        ),
+      ],
+      child: Builder(
+        builder: (context) {
+          final authService = Provider.of<AuthService>(context, listen: false);
+          return MaterialApp.router(
+            title: 'Flutter Quiz App',
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              visualDensity: VisualDensity.adaptivePlatformDensity,
+            ),
+            routerConfig: _createRouter(authService),
+          );
+        },
+      ),
     );
+  }
+}
+
+GoRouter _createRouter(AuthService authService) {
+  return GoRouter(
+    initialLocation: '/',
+    refreshListenable: GoRouterRefreshStream(authService.authStateChanges),
+    redirect: (context, state) {
+      final bool loggedIn = authService.currentUser != null;
+      final bool loggingIn = state.matchedLocation == '/login';
+
+      // Kullanıcı giriş yapmamışsa ve giriş sayfasında değilse, giriş sayfasına yönlendir
+      if (!loggedIn) {
+        return '/login';
+      }
+
+      // Kullanıcı giriş yapmışsa ve giriş sayfasına gitmeye çalışıyorsa, ana sayfaya yönlendir
+      if (loggingIn) {
+        return '/';
+      }
+
+      return null; // Başka bir yönlendirme gerekmiyor
+    },
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const HomeScreen(),
+        routes: [
+          GoRoute(
+            path: 'quiz/:id',
+            builder: (context, state) => QuizScreen(quizId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'profile',
+            builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: 'add-quiz',
+            builder: (context, state) => const AddQuizScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+    ],
+  );
+}
+
+// GoRouter'ı kimlik doğrulama durumu değişikliklerinde yenilemek için kullanılır
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }

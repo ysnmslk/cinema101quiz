@@ -11,10 +11,12 @@ class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  _MainScreenState createState() => _MainScreenState();
+  // Düzeltme: Durum sınıfını genel hale getirerek hatayı gider.
+  MainScreenState createState() => MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+// Düzeltme: Sınıf adını genel yaparak hatayı gider.
+class MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   // Sayfa widget'ları
@@ -43,10 +45,8 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // DÜZELTME: Başlık seçili sekmeye göre dinamik olarak değişiyor.
         title: Text(_titleOptions[_selectedIndex]),
         actions: [
-          // Sadece profil ve ayarlar ekranında çıkış butonu göster
           if (_selectedIndex >= 1)
             IconButton(
               icon: const Icon(Icons.logout),
@@ -58,7 +58,6 @@ class _MainScreenState extends State<MainScreen> {
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
-      // DÜZELTME: Sadece Ana Sayfa'dayken FloatingActionButton göster.
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton(
               onPressed: () {
@@ -70,7 +69,7 @@ class _MainScreenState extends State<MainScreen> {
               tooltip: 'Yeni Quiz Ekle',
               child: const Icon(Icons.add),
             )
-          : null, // Diğer sayfalarda gösterme
+          : null, 
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(

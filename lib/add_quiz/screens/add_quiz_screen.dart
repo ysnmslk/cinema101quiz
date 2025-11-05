@@ -1,9 +1,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:myapp/add_quiz/screens/add_edit_question_screen.dart';
-import 'package:myapp/quiz/models/quiz_models.dart';
-import 'package:myapp/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'package:myapp/quiz/models/quiz_model.dart';
+import 'package:myapp/quiz/services/firebase_quiz_service.dart';
+import 'package:myapp/quiz/services/quiz_service.dart';
 
 class AddQuizScreen extends StatefulWidget {
   const AddQuizScreen({super.key});
@@ -14,7 +16,7 @@ class AddQuizScreen extends StatefulWidget {
 
 class _AddQuizScreenState extends State<AddQuizScreen> {
   final _formKey = GlobalKey<FormState>();
-  final FirestoreService _firestoreService = FirestoreService();
+  final QuizService _quizService = FirebaseQuizService();
 
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -73,21 +75,21 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
       }
 
       final quiz = Quiz(
-        id: '', // Firestore oluşturacak
+        id: '', // Firestore will generate it
         title: _titleController.text,
         description: _descriptionController.text,
         topic: _topicController.text,
-        imageUrl: _imageUrlController.text.isNotEmpty 
-            ? _imageUrlController.text 
+        imageUrl: _imageUrlController.text.isNotEmpty
+            ? _imageUrlController.text
             : 'https://firebasestorage.googleapis.com/v0/b/quiz-app-ca957.appspot.com/o/images%2Fplaceholder.png?alt=media&token=85333555-3224-47c3-a0a3-4061e479c3d7',
         durationMinutes: int.tryParse(_durationController.text) ?? 10,
         createdAt: Timestamp.now(),
+        questions: _questions, // Pass the questions list
       );
 
       try {
-        await _firestoreService.createQuiz(quiz, _questions);
+        await _quizService.addQuiz(quiz); // Use the correct service and method
         
-        // Düzeltme: `mounted` kontrolü eklendi.
         if (!mounted) return;
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,7 +97,6 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
         );
         Navigator.of(context).pop();
       } catch (e) {
-        // Düzeltme: `mounted` kontrolü eklendi.
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Hata: $e')),
