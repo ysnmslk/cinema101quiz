@@ -28,12 +28,23 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Future<List<Question>> _loadQuestions() async {
-    final questions = await context.read<FirestoreService>().getQuestionsForQuiz(widget.quiz.id);
-    // Soru sayısı kadar null içeren bir liste oluştur
-    _selectedAnswers = List.generate(questions.length, (_) => null);
-    // Soruları karıştır
-    questions.shuffle();
-    return questions;
+    try {
+      final questions = await context.read<FirestoreService>().getQuestionsForQuiz(widget.quiz.id);
+      if (questions.isEmpty) {
+        // ignore: avoid_print
+        print('Uyarı: Quiz için soru bulunamadı: ${widget.quiz.id}');
+        return [];
+      }
+      // Soru sayısı kadar null içeren bir liste oluştur
+      _selectedAnswers = List.generate(questions.length, (_) => null);
+      // Soruları karıştır
+      questions.shuffle();
+      return questions;
+    } catch (e) {
+      // ignore: avoid_print
+      print('Soruları yüklerken hata: $e');
+      return [];
+    }
   }
 
   void _answerQuestion(int selectedOptionIndex, List<Question> questions) {
@@ -46,10 +57,18 @@ class _QuizScreenState extends State<QuizScreen> {
         }
       });
 
-      // Kısa bir gecikmeden sonra otomatik olarak sonraki soruya geç
-      Future.delayed(const Duration(milliseconds: 800), () {
-        _nextQuestion(questions.length);
-      });
+      // Son soru değilse otomatik olarak sonraki soruya geç
+      final isLastQuestion = _currentQuestionIndex == questions.length - 1;
+      if (!isLastQuestion) {
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) {
+            setState(() {
+              _currentQuestionIndex++;
+            });
+          }
+        });
+      }
+      // Son soruysa otomatik geçiş yapma, kullanıcı "Quiz'i Bitir" butonuna tıklayacak
     }
   }
 
@@ -58,12 +77,10 @@ class _QuizScreenState extends State<QuizScreen> {
       setState(() {
         _currentQuestionIndex++;
       });
-    } else {
-      _showResults();
     }
   }
 
-  void _showResults() async {
+  void _showResults(List<Question> questions) async {
     final userId = context.read<AuthService>().currentUser?.uid ?? '';
 
     if (userId.isNotEmpty) {
@@ -71,11 +88,10 @@ class _QuizScreenState extends State<QuizScreen> {
             userId,
             widget.quiz.id,
             _score,
-            widget.quiz.questions!.length,
+            questions.length,
           );
     }
     
-    // Düzeltme: `mounted` kontrolü eklendi.
     if (!mounted) return;
 
     Navigator.pushReplacement(
@@ -84,6 +100,9 @@ class _QuizScreenState extends State<QuizScreen> {
         builder: (context) => QuizResultScreen(
           quiz: widget.quiz,
           score: _score,
+          totalQuestions: questions.length,
+          questions: questions,
+          selectedAnswers: _selectedAnswers,
         ),
       ),
     );
@@ -105,8 +124,34 @@ class _QuizScreenState extends State<QuizScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text(snapshot.hasError ? 'Hata: ${snapshot.error}' : 'Soru bulunamadı.'));
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Hata: ${snapshot.error}', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  const Text('Lütfen tekrar deneyin'),
+                ],
+              ),
+            );
+          }
+          
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.quiz_outlined, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text('Soru bulunamadı', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Text('Quiz ID: ${widget.quiz.id}', style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            );
           }
 
           final questions = snapshot.data!;
@@ -119,6 +164,7 @@ class _QuizScreenState extends State<QuizScreen> {
   Widget _buildQuizBody(List<Question> questions) {
     final question = questions[_currentQuestionIndex];
     final bool isAnswered = _selectedAnswers[_currentQuestionIndex] != null;
+    final bool isLastQuestion = _currentQuestionIndex == questions.length - 1;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -136,10 +182,14 @@ class _QuizScreenState extends State<QuizScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          Text(
-            question.text,
-            style: Theme.of(context).textTheme.headlineSmall,
-            textAlign: TextAlign.center,
+          Flexible(
+            child: SingleChildScrollView(
+              child: Text(
+                question.text,
+                style: Theme.of(context).textTheme.headlineSmall,
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
           const SizedBox(height: 32),
           Expanded(
@@ -153,12 +203,10 @@ class _QuizScreenState extends State<QuizScreen> {
 
                 if (isAnswered) {
                   if (option.isCorrect) {
-                    // Düzeltme: `withOpacity` yerine `withAlpha` kullanıldı.
-                    tileColor = Colors.green.withAlpha(75); // ~30% opacity
+                    tileColor = Colors.green.withAlpha(75);
                     trailingIcon = const Icon(Icons.check, color: Colors.green);
                   } else if (isSelected) {
-                    // Düzeltme: `withOpacity` yerine `withAlpha` kullanıldı.
-                    tileColor = Colors.red.withAlpha(75); // ~30% opacity
+                    tileColor = Colors.red.withAlpha(75);
                     trailingIcon = const Icon(Icons.close, color: Colors.red);
                   }
                 }
@@ -175,6 +223,19 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
           ),
           const SizedBox(height: 20),
+          // Son soru ve cevap verildiyse "Quiz'i Bitir" butonu göster
+          if (isLastQuestion && isAnswered)
+            ElevatedButton.icon(
+              icon: const Icon(Icons.check_circle),
+              label: const Text('Quiz\'i Bitir'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              onPressed: () => _showResults(questions),
+            )
+          else if (isLastQuestion && !isAnswered)
+            const SizedBox(height: 20), // Son soruya cevap verilmediyse boşluk bırak
         ],
       ),
     );

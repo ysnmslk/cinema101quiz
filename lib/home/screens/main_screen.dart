@@ -55,9 +55,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
         ],
       ),
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
+      body: _widgetOptions.elementAt(_selectedIndex),
       // DÜZELTME: Sadece Ana Sayfa'dayken FloatingActionButton göster.
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton(

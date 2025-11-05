@@ -1,16 +1,25 @@
 
 import 'dart:developer' as developer;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Paketler google_sign_in: 6.2.1 ve uyumlu firebase versiyonlarına düşürüldü.
-  // Bu versiyon için Android'de 'serverClientId' hala gereklidir.
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: '633516057345-lhnu1p91f2bq8m0js3f69jlkmtu8e7mp.apps.googleusercontent.com',
-  );
+  // Web ve mobil için platform-specific yapılandırma
+  // Web'de Google Sign-In için sadece clientId gereklidir
+  // Android için serverClientId gereklidir
+  final GoogleSignIn _googleSignIn = kIsWeb
+      ? GoogleSignIn(
+          // Web için sadece clientId kullanılır (serverClientId kullanılmaz)
+          clientId: '633516057345-lhnu1p91f2bq8m0js3f69jlkmtu8e7mp.apps.googleusercontent.com',
+          scopes: ['email', 'profile'],
+        )
+      : GoogleSignIn(
+          // Android için serverClientId kullanılır
+          serverClientId: '633516057345-lhnu1p91f2bq8m0js3f69jlkmtu8e7mp.apps.googleusercontent.com',
+        );
 
   Stream<User?> get userStream => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
@@ -27,15 +36,34 @@ class AuthService {
 
   Future<User?> signInWithGoogle() async {
     try {
+      if (kIsWeb) {
+        developer.log('Web platformunda Google Sign-In başlatılıyor', name: 'AuthService');
+      }
+      
       // google_sign_in: 6.2.1 versiyonu için doğru metot .signIn() metodudur.
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
         // Kullanıcı giriş akışını iptal etti.
+        developer.log('Google Sign-In kullanıcı tarafından iptal edildi', name: 'AuthService');
         return null;
       }
 
+      if (kIsWeb) {
+        developer.log('Google kullanıcı hesabı alındı: ${googleUser.email}', name: 'AuthService');
+      }
+
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      if (kIsWeb) {
+        developer.log('Google authentication bilgileri alındı. accessToken: ${googleAuth.accessToken != null}, idToken: ${googleAuth.idToken != null}', name: 'AuthService');
+      }
+
+      // Web için idToken gereklidir, Android için hem accessToken hem idToken gerekir
+      if (googleAuth.idToken == null) {
+        developer.log('Google idToken alınamadı', name: 'AuthService');
+        throw Exception('Google Sign-In: idToken alınamadı');
+      }
 
       // Bu versiyon için kimlik bilgisi hem accessToken hem de idToken gerektirir.
       final AuthCredential credential = GoogleAuthProvider.credential(
@@ -44,6 +72,11 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
+      
+      if (kIsWeb) {
+        developer.log('Firebase Auth ile başarıyla giriş yapıldı: ${userCredential.user?.email}', name: 'AuthService');
+      }
+      
       return userCredential.user;
 
     } on FirebaseAuthException catch (e, s) {
