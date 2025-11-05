@@ -46,11 +46,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 32),
             CustomButton(
-              onPressed: () => _login(() => authService.signInWithEmail(
+              onPressed: () => _login(() => authService.signInWithEmailAndPassword(
                     _emailController.text,
                     _passwordController.text,
                   )),
-              text: 'Sign In with Email',
+              text: 'Login with Email',
             ),
             const SizedBox(height: 16),
             CustomButton(
