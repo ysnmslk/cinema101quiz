@@ -60,13 +60,34 @@ class Quiz {
       }
     }
     
+    // Debug: imageUrl'i kontrol et - farklı field isimlerini de dene
+    dynamic imageUrlValue = data['imageUrl'] ?? data['image_url'] ?? data['imageURL'] ?? data['image'];
+    final parsedImageUrl = safeString(imageUrlValue, '');
+    
+    // Debug log (sadece debug modda)
+    print('🔍 Quiz ${doc.id} (${safeString(data['title'], 'No Title')}):');
+    print('   - imageUrl field: ${data['imageUrl']}');
+    print('   - image_url field: ${data['image_url']}');
+    print('   - imageURL field: ${data['imageURL']}');
+    print('   - image field: ${data['image']}');
+    print('   - Parsed imageUrl: "$parsedImageUrl"');
+    print('   - All data keys: ${data.keys.toList()}');
+    
+    if (parsedImageUrl.isEmpty && imageUrlValue != null) {
+      print('⚠️ Quiz ${doc.id}: imageUrl field exists but is empty or invalid. Value: $imageUrlValue (type: ${imageUrlValue.runtimeType})');
+    } else if (parsedImageUrl.isNotEmpty) {
+      print('✅ Quiz ${doc.id}: imageUrl = $parsedImageUrl');
+    } else {
+      print('❌ Quiz ${doc.id}: imageUrl field is missing or null');
+    }
+    
     return Quiz(
       id: doc.id,
       title: safeString(data['title'], ''),
       description: safeString(data['description'], ''),
       topic: safeString(data['topic'], ''),
       durationMinutes: safeInt(data['durationMinutes'], 0),
-      imageUrl: safeString(data['imageUrl'], ''),
+      imageUrl: parsedImageUrl,
       questions: questionsList,
       createdAt: data['createdAt'] is Timestamp ? data['createdAt'] as Timestamp : null,
     );
