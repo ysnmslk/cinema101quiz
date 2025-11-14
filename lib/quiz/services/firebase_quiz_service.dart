@@ -25,12 +25,36 @@ class FirebaseQuizService implements QuizService {
     return null;
   }
 
-  Future<void> submitQuizResult(QuizResult result) async {
+  @override
+  Future<void> submitQuizResult(QuizResult result, Quiz quiz) async {
+    // Quiz sonucunu kaydet
+    final resultData = result.toMap();
+    resultData['quizTitle'] = quiz.title;
+    resultData['level'] = quiz.topic ?? 'Başlangıç';
+    
     await _firestore
         .collection('users')
         .doc(result.userId)
         .collection('solvedQuizzes')
-        .add(result.toMap());
+        .add(resultData);
+    
+    // Kullanıcı istatistiklerini güncelle
+    final userRef = _firestore.collection('users').doc(result.userId);
+    final userDoc = await userRef.get();
+    
+    final currentTotalScore = (userDoc.data()?['totalScore'] as int?) ?? 0;
+    final currentQuizzesSolved = (userDoc.data()?['quizzesSolved'] as int?) ?? 0;
+    final currentAverageScore = (userDoc.data()?['averageScore'] as double?) ?? 0.0;
+    
+    final newTotalScore = currentTotalScore + result.score;
+    final newQuizzesSolved = currentQuizzesSolved + 1;
+    final newAverageScore = (newTotalScore / (newQuizzesSolved * result.totalQuestions)) * 100;
+    
+    await userRef.set({
+      'totalScore': newTotalScore,
+      'quizzesSolved': newQuizzesSolved,
+      'averageScore': newAverageScore,
+    }, SetOptions(merge: true));
   }
   
   // Bu metotları da ekliyorum, çünkü QuizService arayüzünde tanımlanmışlar.
@@ -47,10 +71,5 @@ class FirebaseQuizService implements QuizService {
   @override
   Future<void> deleteQuiz(String id) async {
     await _quizzesCollection.doc(id).delete();
-  }
-  
-  Future<void> submitResult(QuizResult result) {
-    // TODO: implement submitResult
-    throw UnimplementedError();
   }
 }

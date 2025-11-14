@@ -71,14 +71,23 @@ class _AddEditQuestionDialogState extends State<AddEditQuestionDialog> {
                         },
                       ),
                     ),
-                    Radio<int>(
-                      value: index,
-                      groupValue: _correctAnswerIndex,
-                      onChanged: (value) {
+                    InkWell(
+                      onTap: () {
                         setState(() {
-                          _correctAnswerIndex = value!;
+                          _correctAnswerIndex = index;
                         });
                       },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Icon(
+                          _correctAnswerIndex == index 
+                              ? Icons.radio_button_checked 
+                              : Icons.radio_button_unchecked,
+                          color: _correctAnswerIndex == index 
+                              ? Theme.of(context).colorScheme.primary 
+                              : null,
+                        ),
+                      ),
                     ),
                   ],
                 );

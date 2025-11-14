@@ -8,5 +8,5 @@ abstract class QuizService {
   Future<void> addQuiz(Quiz quiz);
   Future<void> updateQuiz(Quiz quiz);
   Future<void> deleteQuiz(String id);
-  Future<void> submitQuizResult(QuizResult result);
+  Future<void> submitQuizResult(QuizResult result, Quiz quiz);
 }

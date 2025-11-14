@@ -37,7 +37,39 @@ class FirestoreQuizService implements QuizService {
   }
 
   @override
-  Future<void> submitQuizResult(QuizResult result) async {
-    await _firestore.collection('results').add(result.toMap());
+  Future<void> submitQuizResult(QuizResult result, Quiz quiz) async {
+    // Quiz sonucunu kaydet
+    final resultData = result.toMap();
+    resultData['quizTitle'] = quiz.title;
+    resultData['level'] = quiz.topic ?? 'Başlangıç';
+    
+    await _firestore
+        .collection('users')
+        .doc(result.userId)
+        .collection('solvedQuizzes')
+        .add(resultData);
+    
+    // Kullanıcı istatistiklerini güncelle
+    final userRef = _firestore.collection('users').doc(result.userId);
+    final userDoc = await userRef.get();
+    
+    final currentTotalScore = (userDoc.data()?['totalScore'] as int?) ?? 0;
+    final currentQuizzesSolved = (userDoc.data()?['quizzesSolved'] as int?) ?? 0;
+    final currentAverageScore = (userDoc.data()?['averageScore'] as double?) ?? 0.0;
+    
+    final newTotalScore = currentTotalScore + result.score;
+    final newQuizzesSolved = currentQuizzesSolved + 1;
+    final newAverageScore = (newTotalScore / (newQuizzesSolved * result.totalQuestions)) * 100;
+    
+    await userRef.set({
+      'totalScore': newTotalScore,
+      'quizzesSolved': newQuizzesSolved,
+      'averageScore': newAverageScore,
+    }, SetOptions(merge: true));
+  }
+
+  @override
+  Future<void> updateQuiz(Quiz quiz) async {
+    await _firestore.collection('quizzes').doc(quiz.id).update(quiz.toMap());
   }
 }

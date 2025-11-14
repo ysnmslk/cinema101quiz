@@ -1,11 +1,17 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../auth/services/auth_service.dart';
 import '../profile/models/solved_quiz.dart';
 import '../profile/services/firestore_service.dart';
+import '../profile/screens/certificate_screen.dart';
+import '../quiz/models/quiz_models.dart';
+import '../quiz/services/quiz_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -42,6 +48,36 @@ class ProfileScreen extends StatelessWidget {
             _buildSolvedQuizzesSection(context, firestoreService, user.uid),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 1,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              context.go('/');
+              break;
+            case 1:
+              // Zaten profil sayfasındayız
+              break;
+            case 2:
+              context.go('/settings');
+              break;
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Ana Sayfa',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profil',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Ayarlar',
+          ),
+        ],
       ),
     );
   }
@@ -138,6 +174,8 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildSolvedQuizzesSection(BuildContext context, FirestoreService firestoreService, String userId) {
+    final quizService = Provider.of<QuizService>(context, listen: false);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -167,7 +205,7 @@ class ProfileScreen extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: quizzes.length,
               itemBuilder: (context, index) {
-                final quiz = quizzes[index];
+                final solvedQuiz = quizzes[index];
                 return Card(
                   elevation: 2,
                   margin: const EdgeInsets.symmetric(vertical: 8),
@@ -177,27 +215,110 @@ class ProfileScreen extends StatelessWidget {
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16),
                     title: Text(
-                      quiz.quizTitle,
+                      solvedQuiz.quizTitle,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 4),
-                        Text('Seviye: ${quiz.level}'),
+                        Text('Seviye: ${solvedQuiz.level}'),
                         const SizedBox(height: 4),
                         Text(
-                          'Tarih: ${DateFormat.yMd().add_jm().format(quiz.dateCompleted)}',
+                          'Tarih: ${DateFormat.yMd().add_jm().format(solvedQuiz.dateCompleted)}',
                         ),
                       ],
                     ),
                     trailing: Text(
-                      '${quiz.score}/${quiz.totalQuestions}',
+                      '${solvedQuiz.score}/${solvedQuiz.totalQuestions}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).primaryColor,
                           ),
                     ),
+                    onTap: () async {
+                      // Quiz bilgilerini çek ve sertifika sayfasına git
+                      try {
+                        debugPrint('Quiz ID: ${solvedQuiz.quizId}');
+                        
+                        // Loading göster
+                        if (context.mounted) {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+                        
+                        final quiz = await quizService.getQuizById(solvedQuiz.quizId);
+                        debugPrint('Quiz found: ${quiz != null}');
+                        
+                        // Loading'i kapat
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                        
+                        if (quiz == null) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Quiz bulunamadı.')),
+                            );
+                          }
+                          return;
+                        }
+                        
+                        if (context.mounted) {
+                          // Quiz modelini quiz_models.dart'taki Quiz'e dönüştür
+                          final quizModels = Quiz(
+                            id: quiz.id,
+                            title: quiz.title,
+                            description: quiz.description,
+                            topic: quiz.topic,
+                            durationMinutes: quiz.durationMinutes,
+                            imageUrl: quiz.imageUrl,
+                            questions: [],
+                            createdAt: quiz.createdAt ?? Timestamp.now(),
+                          );
+                          
+                          final userResult = UserQuizResult(
+                            quizId: solvedQuiz.quizId,
+                            score: solvedQuiz.score,
+                            totalQuestions: solvedQuiz.totalQuestions,
+                            completedAt: Timestamp.fromDate(solvedQuiz.dateCompleted),
+                          );
+                          
+                          final resultDetails = QuizResultDetails(
+                            result: userResult,
+                            quiz: quizModels,
+                          );
+                          
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CertificateScreen(resultDetails: resultDetails),
+                            ),
+                          );
+                        }
+                      } catch (e, stackTrace) {
+                        // Loading'i kapat
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                        
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Sertifika yüklenirken hata oluştu: $e'),
+                              duration: const Duration(seconds: 5),
+                            ),
+                          );
+                        }
+                        debugPrint('Certificate error: $e');
+                        debugPrint('Stack trace: $stackTrace');
+                      }
+                    },
                   ),
                 );
               },

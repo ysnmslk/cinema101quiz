@@ -13,22 +13,22 @@ dependencies:
     sdk: flutter
 
   # Firebase (Uyumlu versiyon seti)
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.18.2
-  cloud_firestore: ^4.17.5
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
+  cloud_firestore: ^6.1.0
   google_sign_in: ^6.2.1
 
   # State Management
   provider: ^6.1.2
 
   # UI & Icons
-  cupertino_icons: ^1.0.6
-  go_router: ^16.3.0
+  cupertino_icons: ^1.0.8
+  go_router: ^17.0.0
   google_fonts: ^6.2.1
-  font_awesome_flutter: ^10.7.0 # Eklendi
+  font_awesome_flutter: ^10.8.0
   transparent_image: ^2.0.1
   intl: ^0.20.2
-  share_plus: ^9.0.0 # Sosyal medya paylaşımı için
+  share_plus: ^12.0.1
 
 dev_dependencies:
   flutter_test:

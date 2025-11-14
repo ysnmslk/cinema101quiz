@@ -1,11 +1,13 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:myapp/quiz/models/quiz_model.dart';
+import 'package:myapp/quiz/models/quiz_models.dart' as quiz_models;
+
 
 import 'package:myapp/quiz/screens/quiz_screen.dart';
 
 class QuizCard extends StatelessWidget {
-  final Quiz quiz;
+  final dynamic quiz; // Accept both Quiz types
   final bool isCompleted;
 
   const QuizCard({super.key, required this.quiz, this.isCompleted = false});
@@ -19,11 +21,24 @@ class QuizCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias, // Köşeleri yuvarlatılmış resim için
       child: InkWell(
         onTap: () {
-          // Düzeltme: Navigasyon, QuizScreen'e String (id) yerine tam Quiz nesnesini gönderiyor.
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => QuizScreen(quiz: quiz, quizId: '',), // quiz nesnesini yolla
+              builder: (context) {
+                // Convert quiz_model.Quiz to quiz_models.Quiz if needed
+                final quizModelsQuiz = quiz is quiz_models.Quiz 
+                    ? quiz 
+                    : quiz_models.Quiz(
+                        id: quiz.id,
+                        title: quiz.title,
+                        description: quiz.description,
+                        topic: quiz.topic,
+                        imageUrl: quiz.imageUrl,
+                        durationMinutes: quiz.durationMinutes,
+                        createdAt: quiz.createdAt ?? Timestamp.now(),
+                      );
+                return QuizScreen(quiz: quizModelsQuiz, quizId: quiz.id);
+              },
             ),
           );
         },

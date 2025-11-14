@@ -9,7 +9,7 @@ import 'package:myapp/quiz/widgets/quiz_results.dart';
 class QuizScreen extends StatefulWidget {
   final Quiz quiz;
 
-  const QuizScreen({super.key, required this.quiz});
+  const QuizScreen({super.key, required this.quiz, required String quizId});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();

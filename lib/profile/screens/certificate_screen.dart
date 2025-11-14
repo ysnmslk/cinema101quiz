@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:myapp/quiz/models/quiz_models.dart';
+import 'package:share_plus/share_plus.dart';
 
 class CertificateScreen extends StatefulWidget {
   final QuizResultDetails resultDetails;
@@ -90,7 +91,37 @@ class _CertificateScreenState extends State<CertificateScreen> {
                   style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 const SizedBox(height: 40),
-                Image.asset('assets/logo.png', height: 60),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    'Sen de sinema bilginle arkadaşlarınla yarışmak için Cinema101 quiz uygulamasını indir',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final String shareText = 
+                        'Cinema101 Quiz\'te ${quiz.title} quizini tamamladım! '
+                        'Puanım: ${result.score}/${result.totalQuestions} (%${scorePercentage.toStringAsFixed(1)})\n\n'
+                        'Sen de sinema bilginle arkadaşlarınla yarışmak için Cinema101 quiz uygulamasını indir!';
+                    
+                    await Share.share(
+                      shareText,
+                      subject: 'Cinema101 Quiz Başarısı',
+                    );
+                  },
+                  icon: const Icon(Icons.share),
+                  label: const Text('Sosyal Medyada Paylaş'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
               ],
             ),
           ),

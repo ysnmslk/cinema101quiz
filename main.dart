@@ -3,7 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:myapp/firebase_options.dart';
 import 'package:provider/provider.dart';
-import 'package:myapp/auth/services/auth_service.dart'; 
+import 'package:myapp/auth/services/auth_service.dart';
+import 'package:myapp/auth/services/firebase_auth_service.dart';
 import 'package:myapp/theme/theme_provider.dart';
 
 void main() async {
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget {
         // Tema durumunu yönetmek için
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         // AuthService'i tüm uygulama genelinde erişilebilir kılmak için
-        Provider<AuthService>(create: (_) => AuthService()),
+        Provider<AuthService>(create: (_) => FirebaseAuthService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -35,7 +36,9 @@ class MyApp extends StatelessWidget {
             darkTheme: themeProvider.darkTheme,
             themeMode: themeProvider.themeMode,
             // Uygulamanın başlangıç noktası
-            home: const AuthGate(), 
+            home: const Scaffold(
+              body: Center(child: Text('Please use lib/main.dart')),
+            ), 
           );
         },
       ),

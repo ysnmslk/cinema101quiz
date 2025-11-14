@@ -30,14 +30,17 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: FutureBuilder<List<Quiz>>(
-        future: quizService.getQuizzes(),
+      body: StreamBuilder<List<Quiz>>(
+        stream: quizService.getQuizzes(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('Henüz quiz bulunmuyor.'));
           }
           final quizzes = snapshot.data!;
           return ListView.builder(

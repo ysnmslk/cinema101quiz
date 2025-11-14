@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:myapp/profile/models/solved_quiz.dart';
 import 'package:myapp/profile/services/firestore_service.dart';
+import 'package:myapp/quiz/models/quiz_models.dart';
 
 class FirebaseFirestoreService implements FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -48,5 +49,28 @@ class FirebaseFirestoreService implements FirestoreService {
         'averageScore': 0.0,
       };
     }
+  }
+
+  @override
+  Stream<List<QuizResultDetails>> getUserResultsWithDetailsStream(String userId) {
+    final resultsStream = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('results')
+        .orderBy('completedAt', descending: true)
+        .snapshots();
+
+    return resultsStream.asyncMap((resultsSnapshot) async {
+      final detailedResults = <QuizResultDetails>[];
+      for (final resultDoc in resultsSnapshot.docs) {
+        final result = UserQuizResult.fromFirestore(resultDoc.data());
+        final quizDoc = await _firestore.collection('quizzes').doc(result.quizId).get();
+        if (quizDoc.exists) {
+          final quiz = Quiz.fromFirestore(quizDoc.id, quizDoc.data()!);
+          detailedResults.add(QuizResultDetails(result: result, quiz: quiz));
+        }
+      }
+      return detailedResults;
+    });
   }
 }

@@ -21,10 +21,26 @@ class LoginScreen extends StatelessWidget {
         child: CustomButton(
           text: 'Sign in with Google',
           onPressed: () async {
-            final user = await authService.signInWithGoogle();
-            if (user != null) {
-              // ignore: use_build_context_synchronously
-              context.go('/home');
+            try {
+              final user = await authService.signInWithGoogle();
+              if (user != null && context.mounted) {
+                context.go('/');
+              } else if (user == null && context.mounted) {
+                // Kullanıcı girişi iptal etti, sessizce devam et
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Giriş iptal edildi')),
+                );
+              }
+            } catch (e) {
+              // Hata durumunda kullanıcıya bildir
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Giriş hatası: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
           },
         ),

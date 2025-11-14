@@ -13,6 +13,8 @@ import 'package:myapp/screens/home_screen.dart';
 import 'package:myapp/screens/login_screen.dart';
 import 'package:myapp/screens/profile_screen.dart';
 import 'package:myapp/screens/quiz_screen.dart';
+import 'package:myapp/settings/screens/settings_screen.dart';
+import 'package:myapp/theme/theme_provider.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 
@@ -29,6 +31,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         Provider<AuthService>(
           create: (_) => FirebaseAuthService(),
         ),
@@ -39,15 +42,15 @@ class MyApp extends StatelessWidget {
           create: (_) => FirebaseFirestoreService(),
         ),
       ],
-      child: Builder(
-        builder: (context) {
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
           final authService = Provider.of<AuthService>(context, listen: false);
           return MaterialApp.router(
+            debugShowCheckedModeBanner: false,
             title: 'Flutter Quiz App',
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-              visualDensity: VisualDensity.adaptivePlatformDensity,
-            ),
+            theme: themeProvider.lightTheme,
+            darkTheme: themeProvider.darkTheme,
+            themeMode: themeProvider.themeMode,
             routerConfig: _createRouter(authService),
           );
         },
@@ -59,7 +62,7 @@ class MyApp extends StatelessWidget {
 GoRouter _createRouter(AuthService authService) {
   return GoRouter(
     initialLocation: '/',
-    refreshListenable: GoRouterRefreshStream(authService.authStateChanges),
+    refreshListenable: GoRouterRefreshStream(authService.userStream),
     redirect: (context, state) {
       final bool loggedIn = authService.currentUser != null;
       final bool loggingIn = state.matchedLocation == '/login';
@@ -88,6 +91,10 @@ GoRouter _createRouter(AuthService authService) {
           GoRoute(
             path: 'profile',
             builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: 'settings',
+            builder: (context, state) => const SettingsScreen(),
           ),
           GoRoute(
             path: 'add-quiz',

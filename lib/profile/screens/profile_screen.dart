@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/profile/services/firestore_service.dart';
 import 'package:provider/provider.dart';
 import 'package:myapp/auth/services/auth_service.dart';
+import 'package:myapp/quiz/models/quiz_models.dart';
 
 import 'package:myapp/profile/screens/certificate_screen.dart';
 

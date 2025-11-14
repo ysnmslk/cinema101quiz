@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../auth/services/auth_service.dart';
 import '../quiz/models/quiz_model.dart';
 import '../quiz/models/quiz_result.dart';
 import '../quiz/services/quiz_service.dart';
@@ -25,10 +26,13 @@ class _QuizScreenState extends State<QuizScreen> {
     _quizFuture = _loadQuiz();
   }
 
-  Future<Future<List<Quiz>>> _loadQuiz() async {
+  Future<Quiz> _loadQuiz() async {
     final quizService = Provider.of<QuizService>(context, listen: false);
-    final quizzes = await quizService.getQuizzes();
-    return quizzes.firstWhere((quiz) => quiz.id == widget.quizId);
+    final quiz = await quizService.getQuizById(widget.quizId);
+    if (quiz == null) {
+      throw Exception('Quiz not found');
+    }
+    return quiz;
   }
 
   void _nextQuestion(int selectedOptionIndex) async {
@@ -47,6 +51,27 @@ class _QuizScreenState extends State<QuizScreen> {
   Future<void> _submitResults() async {
     final quiz = await _quizFuture;
     final quizService = Provider.of<QuizService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final user = authService.currentUser;
+    
+    if (user == null) {
+      // ignore: use_build_context_synchronously
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Hata'),
+          content: const Text('Lütfen giriş yapın.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     int score = 0;
     for (int i = 0; i < quiz.questions.length; i++) {
       if (_selectedAnswers[i] == quiz.questions[i].correctAnswerIndex) {
@@ -56,15 +81,15 @@ class _QuizScreenState extends State<QuizScreen> {
 
     final result = QuizResult(
       quizId: widget.quizId,
-      userId: 'test_user', // Replace with actual user ID
+      userId: user.uid,
       score: score,
-      totalQuestions: quiz.questions.length, // Düzeltildi
-      dateCompleted: DateTime.now(), // Düzeltildi
+      totalQuestions: quiz.questions.length,
+      dateCompleted: DateTime.now(),
       answers: _selectedAnswers,
       timestamp: DateTime.now(),
     );
 
-    await quizService.submitResult(result);
+    await quizService.submitQuizResult(result, quiz);
 
     // ignore: use_build_context_synchronously
     showDialog(
@@ -121,13 +146,24 @@ class _QuizScreenState extends State<QuizScreen> {
                 ...question.options.asMap().entries.map((entry) {
                   final index = entry.key;
                   final option = entry.value;
-                  return RadioListTile(
-                    title: Text(option),
-                    value: index,
-                    groupValue: _selectedAnswers.length > _currentQuestionIndex ? _selectedAnswers[_currentQuestionIndex] : -1,
-                    onChanged: (value) {
-                      _nextQuestion(value as int);
-                    },
+                  final isSelected = _selectedAnswers.length > _currentQuestionIndex 
+                      ? _selectedAnswers[_currentQuestionIndex] == index 
+                      : false;
+                  return InkWell(
+                    onTap: () => _nextQuestion(index),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                            color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(child: Text(option)),
+                        ],
+                      ),
+                    ),
                   );
                 }),
               ],

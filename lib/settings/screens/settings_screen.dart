@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myapp/auth/services/auth_service.dart';
 import 'package:myapp/theme/theme_provider.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +11,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final AuthService authService = AuthService();
+    final authService = Provider.of<AuthService>(context, listen: false);
 
     // Tema değiştirme işlemini yöneten fonksiyon
     void changeTheme(ThemeMode value) {
@@ -18,8 +19,13 @@ class SettingsScreen extends StatelessWidget {
       Navigator.of(context).pop(); // Dialog'u kapat
     }
 
-    // DÜZELTME: Scaffold kaldırıldı, sadece içerik döndürülüyor (MainScreen zaten Scaffold sağlıyor)
-    return ListView(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ayarlar'),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: ListView(
       children: [
         ListTile(
           title: const Text('Tema'),
@@ -75,10 +81,44 @@ class SettingsScreen extends StatelessWidget {
 
             if (shouldLogout == true) {
               await authService.signOut();
+              if (context.mounted) {
+                context.go('/login');
+              }
             }
           },
         ),
       ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 2,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              context.go('/');
+              break;
+            case 1:
+              context.go('/profile');
+              break;
+            case 2:
+              // Zaten ayarlar sayfasındayız
+              break;
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Ana Sayfa',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profil',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Ayarlar',
+          ),
+        ],
+      ),
     );
   }
 

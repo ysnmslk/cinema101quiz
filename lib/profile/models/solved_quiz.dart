@@ -20,7 +20,8 @@ class SolvedQuiz {
 
   factory SolvedQuiz.fromMap(String id, Map<String, dynamic> data) {
     return SolvedQuiz(
-      quizId: id,
+      // quizId field'ını kullan, yoksa document ID'sini kullan
+      quizId: data['quizId'] as String? ?? id,
       quizTitle: data['quizTitle'] ?? 'İsimsiz Quiz',
       score: data['score'] ?? 0,
       totalQuestions: data['totalQuestions'] ?? 0,
