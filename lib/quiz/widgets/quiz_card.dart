@@ -1,6 +1,8 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:myapp/quiz/models/quiz_models.dart' as quiz_models;
 
 
@@ -50,33 +52,59 @@ class QuizCard extends StatelessWidget {
               children: [
                 Hero(
                   tag: quiz.id, // Animasyon için Hero widget'ı
-                  child: Image.network(
-                    quiz.imageUrl,
-                    width: double.infinity,
-                    height: 150,
-                    fit: BoxFit.cover,
-                    // Yüklenme ve hata durumları için builder'lar
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: 150,
-                        color: Colors.grey[200],
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
+                  child: quiz.imageUrl.isNotEmpty && quiz.imageUrl.startsWith('http')
+                      ? CachedNetworkImage(
+                          imageUrl: quiz.imageUrl,
+                          width: double.infinity,
+                          height: 150,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            height: 150,
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) {
+                            debugPrint('Image load error for $url: $error');
+                            return Container(
+                              height: 150,
+                              color: Colors.grey[300],
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.broken_image, color: Colors.grey, size: 50),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Resim yüklenemedi',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          memCacheWidth: 600,
+                          memCacheHeight: 400,
+                          fadeInDuration: const Duration(milliseconds: 300),
+                          fadeOutDuration: const Duration(milliseconds: 100),
+                          maxWidthDiskCache: 600,
+                          maxHeightDiskCache: 400,
+                        )
+                      : Container(
+                          height: 150,
+                          color: Colors.grey[300],
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.image_not_supported, color: Colors.grey, size: 50),
+                              SizedBox(height: 4),
+                              Text(
+                                'Resim URL\'si yok',
+                                style: TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 150,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.broken_image, color: Colors.grey, size: 50),
-                    ),
-                  ),
                 ),
                 // Eğer quiz tamamlandıysa, sağ üst köşeye bir ikon ekle
                 if (isCompleted)
