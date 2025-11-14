@@ -44,13 +44,13 @@ class FirestoreQuizService implements QuizService {
     resultData['level'] = quiz.topic ?? 'Başlangıç';
     
     await _firestore
-        .collection('users')
+        .collection('1users')
         .doc(result.userId)
         .collection('solvedQuizzes')
         .add(resultData);
     
     // Kullanıcı istatistiklerini güncelle
-    final userRef = _firestore.collection('users').doc(result.userId);
+    final userRef = _firestore.collection('1users').doc(result.userId);
     final userDoc = await userRef.get();
     
     final currentTotalScore = (userDoc.data()?['totalScore'] as int?) ?? 0;

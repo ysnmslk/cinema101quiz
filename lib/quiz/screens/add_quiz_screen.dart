@@ -1,6 +1,9 @@
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:myapp/auth/services/auth_service.dart';
+import 'package:myapp/profile/services/firestore_service.dart';
 import 'package:myapp/quiz/models/quiz_model.dart';
 import 'package:myapp/quiz/models/question.dart' as question_model;
 import 'package:myapp/quiz/models/option.dart';
@@ -24,10 +27,13 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
   late TextEditingController _durationController;
   late TextEditingController _imageUrlController;
   var _questions = <question_model.Question>[];
+  bool _isAdmin = false;
+  bool _isCheckingAdmin = true;
 
   @override
   void initState() {
     super.initState();
+    _checkAdminStatus();
     _titleController = TextEditingController(text: widget.quiz?.title ?? '');
     _descriptionController = TextEditingController(text: widget.quiz?.description ?? '');
     _topicController = TextEditingController(text: widget.quiz?.topic ?? '');
@@ -57,8 +63,75 @@ class _AddQuizScreenState extends State<AddQuizScreen> {
     }
   }
 
+  Future<void> _checkAdminStatus() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+    final userId = authService.currentUser?.uid;
+    
+    if (userId != null) {
+      final isAdmin = await firestoreService.isAdmin(userId);
+      if (mounted) {
+        setState(() {
+          _isAdmin = isAdmin;
+          _isCheckingAdmin = false;
+        });
+        // Eğer admin değilse ana sayfaya yönlendir
+        if (!isAdmin) {
+          context.go('/');
+        }
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _isAdmin = false;
+          _isCheckingAdmin = false;
+        });
+        context.go('/');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Admin kontrolü yapılıyorsa loading göster
+    if (_isCheckingAdmin) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Admin değilse erişim reddedildi mesajı göster
+    if (!_isAdmin) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Erişim Reddedildi'),
+        ),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.block, size: 64, color: Colors.red),
+                SizedBox(height: 16),
+                Text(
+                  'Bu sayfaya erişim yetkiniz yok.',
+                  style: TextStyle(fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Sadece admin kullanıcılar quiz ekleyebilir.',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.quiz == null ? 'Yeni Quiz Ekle' : 'Quizi Düzenle'),

@@ -11,7 +11,7 @@ class FirebaseFirestoreService implements FirestoreService {
   @override
   Stream<List<SolvedQuiz>> getSolvedQuizzes(String userId) {
     return _firestore
-        .collection('users')
+        .collection('1users')
         .doc(userId)
         .collection('solvedQuizzes')
         .orderBy('dateCompleted', descending: true)
@@ -24,7 +24,7 @@ class FirebaseFirestoreService implements FirestoreService {
   @override
   Future<Map<String, dynamic>> getUserStats(String userId) async {
     try {
-      DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+      DocumentSnapshot userDoc = await _firestore.collection('1users').doc(userId).get();
 
       if (userDoc.exists) {
         return {
@@ -54,7 +54,7 @@ class FirebaseFirestoreService implements FirestoreService {
   @override
   Stream<List<QuizResultDetails>> getUserResultsWithDetailsStream(String userId) {
     final resultsStream = _firestore
-        .collection('users')
+        .collection('1users')
         .doc(userId)
         .collection('results')
         .orderBy('completedAt', descending: true)
@@ -72,5 +72,22 @@ class FirebaseFirestoreService implements FirestoreService {
       }
       return detailedResults;
     });
+  }
+
+  @override
+  Future<bool> isAdmin(String userId) async {
+    try {
+      final userDoc = await _firestore.collection('1users').doc(userId).get();
+      if (userDoc.exists) {
+        final levelTitle = userDoc.get('level_title') as String?;
+        return levelTitle?.toLowerCase() == 'admin';
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error checking admin status: $e');
+      }
+      return false;
+    }
   }
 }

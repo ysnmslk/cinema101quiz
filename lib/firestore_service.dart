@@ -107,17 +107,15 @@ class FirestoreService {
     });
   }
 
-  // DÜZELTME: '1users' -> 'users' olarak düzeltildi.
   Stream<Set<String>> getCompletedQuizzesStream(String userId) {
     return _db
-        .collection('users') 
+        .collection('1users') 
         .doc(userId)
         .collection('results')
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => doc.id).toSet());
   }
 
-  // DÜZELTME: '1users' -> 'users' olarak düzeltildi.
   Future<void> saveUserResult(String userId, String quizId, int score, int totalQuestions) async {
     try {
       final resultData = {
@@ -128,7 +126,7 @@ class FirestoreService {
       };
 
       await _db
-          .collection('users') 
+          .collection('1users') 
           .doc(userId)
           .collection('results')
           .doc(quizId)
@@ -139,10 +137,9 @@ class FirestoreService {
     }
   }
   
-  // DÜZELTME: '1users' -> 'users' olarak düzeltildi.
   Stream<List<QuizResultDetails>> getUserResultsWithDetailsStream(String userId) {
     final resultsStream = _db
-        .collection('users') 
+        .collection('1users') 
         .doc(userId)
         .collection('results')
         .orderBy('completedAt', descending: true)

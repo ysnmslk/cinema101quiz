@@ -6,4 +6,5 @@ abstract class FirestoreService {
   Stream<List<SolvedQuiz>> getSolvedQuizzes(String userId);
   Future<Map<String, dynamic>> getUserStats(String userId);
   Stream<List<QuizResultDetails>> getUserResultsWithDetailsStream(String userId);
+  Future<bool> isAdmin(String userId);
 }

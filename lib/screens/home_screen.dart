@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../auth/services/auth_service.dart';
 import '../home/widgets/quiz_card.dart';
+import '../profile/services/firestore_service.dart';
 import '../quiz/models/quiz_model.dart';
 import '../quiz/services/quiz_service.dart';
 
@@ -19,6 +20,37 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _isAdmin = false;
+  bool _isLoadingAdmin = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdminStatus();
+  }
+
+  Future<void> _checkAdminStatus() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+    final userId = authService.currentUser?.uid;
+    
+    if (userId != null) {
+      final isAdmin = await firestoreService.isAdmin(userId);
+      if (mounted) {
+        setState(() {
+          _isAdmin = isAdmin;
+          _isLoadingAdmin = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _isAdmin = false;
+          _isLoadingAdmin = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -48,13 +80,15 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Cin101'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Quiz Ekle',
-            onPressed: () {
-              context.go('/add-quiz');
-            },
-          ),
+          // Sadece admin kullanıcılar için quiz ekleme butonu
+          if (_isAdmin && !_isLoadingAdmin)
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Quiz Ekle',
+              onPressed: () {
+                context.go('/add-quiz');
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Çıkış Yap',
