@@ -41,7 +41,7 @@ class FirestoreQuizService implements QuizService {
     // Quiz sonucunu kaydet
     final resultData = result.toMap();
     resultData['quizTitle'] = quiz.title;
-    resultData['level'] = quiz.topic ?? 'Başlangıç';
+    resultData['level'] = quiz.topic;
     
     await _firestore
         .collection('1users')

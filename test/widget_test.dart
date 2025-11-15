@@ -23,7 +23,7 @@ class TestAuthService implements AuthService {
   Future<User?> signInWithEmailAndPassword(String email, String password) async => null;
   
   @override
-  Future<User?> createUserWithEmailAndPassword(String email, String password) async => null;
+  Future<User?> createUserWithEmailAndPassword(String email, String password, {String? displayName}) async => null;
   
   @override
   Future<void> signOut() async {}

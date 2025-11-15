@@ -72,13 +72,6 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
-  void _nextQuestion(int totalQuestions) {
-    if (_currentQuestionIndex < totalQuestions - 1) {
-      setState(() {
-        _currentQuestionIndex++;
-      });
-    }
-  }
 
   void _showResults(List<Question> questions) async {
     final userId = context.read<AuthService>().currentUser?.uid ?? '';
