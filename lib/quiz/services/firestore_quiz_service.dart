@@ -49,22 +49,36 @@ class FirestoreQuizService implements QuizService {
         .collection('solvedQuizzes')
         .add(resultData);
     
-    // Kullanıcı istatistiklerini güncelle
+    // Kullanıcı istatistiklerini güncelle - solvedQuizzes koleksiyonundan gerçek toplamları hesapla
+    final solvedQuizzesSnapshot = await _firestore
+        .collection('1users')
+        .doc(result.userId)
+        .collection('solvedQuizzes')
+        .get();
+    
+    int totalScore = 0;
+    int totalQuestions = 0;
+    int quizzesSolved = solvedQuizzesSnapshot.docs.length;
+    
+    // Tüm solvedQuizzes'ten score ve totalQuestions değerlerini topla
+    for (var doc in solvedQuizzesSnapshot.docs) {
+      final data = doc.data();
+      totalScore += (data['score'] as int?) ?? 0;
+      totalQuestions += (data['totalQuestions'] as int?) ?? 0;
+    }
+    
+    // Ortalama: (Toplam doğru sayısı / Toplam çözülen soru sayısı) * 100
+    final averageScore = totalQuestions > 0 
+        ? (totalScore / totalQuestions) * 100 
+        : 0.0;
+    
+    // İstatistikleri güncelle
     final userRef = _firestore.collection('1users').doc(result.userId);
-    final userDoc = await userRef.get();
-    
-    final currentTotalScore = (userDoc.data()?['totalScore'] as int?) ?? 0;
-    final currentQuizzesSolved = (userDoc.data()?['quizzesSolved'] as int?) ?? 0;
-    final currentAverageScore = (userDoc.data()?['averageScore'] as double?) ?? 0.0;
-    
-    final newTotalScore = currentTotalScore + result.score;
-    final newQuizzesSolved = currentQuizzesSolved + 1;
-    final newAverageScore = (newTotalScore / (newQuizzesSolved * result.totalQuestions)) * 100;
-    
     await userRef.set({
-      'totalScore': newTotalScore,
-      'quizzesSolved': newQuizzesSolved,
-      'averageScore': newAverageScore,
+      'totalScore': totalScore,
+      'quizzesSolved': quizzesSolved,
+      'totalQuestions': totalQuestions,
+      'averageScore': averageScore,
     }, SetOptions(merge: true));
   }
 

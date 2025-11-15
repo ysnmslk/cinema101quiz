@@ -18,7 +18,7 @@ abstract class AuthService {
   Future<User?> signInWithEmailAndPassword(String email, String password);
   
   /// Create a new user with email and password
-  Future<User?> createUserWithEmailAndPassword(String email, String password);
+  Future<User?> createUserWithEmailAndPassword(String email, String password, {String? displayName});
   
   /// Sign out the current user
   Future<void> signOut();

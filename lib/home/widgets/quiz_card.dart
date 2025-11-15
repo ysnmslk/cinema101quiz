@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:myapp/quiz/models/quiz_model.dart';
 import 'package:myapp/screens/quiz_screen.dart';
 
@@ -73,39 +72,19 @@ class QuizCard extends StatelessWidget {
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
                                 debugPrint('Base64 image decode error: $error');
-                                return Container(
-                                  color: Colors.grey[300],
-                                  child: const Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.broken_image, color: Colors.grey, size: 40),
-                                        SizedBox(height: 4),
-                                        Text(
-                                          'Resim yüklenemedi',
-                                          style: TextStyle(fontSize: 10, color: Colors.grey),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                return Image.asset(
+                                  'assets/cin_logo.png',
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
                                 );
                               },
                             )
-                          : Container(
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.broken_image, color: Colors.grey, size: 40),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Resim yüklenemedi',
-                                      style: TextStyle(fontSize: 10, color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                          : Image.asset(
+                              'assets/cin_logo.png',
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
                             )
                       : (quiz.imageUrl.startsWith('http') || quiz.imageUrl.startsWith('https'))
                           ? CachedNetworkImage(
@@ -121,21 +100,11 @@ class QuizCard extends StatelessWidget {
                               ),
                               errorWidget: (context, url, error) {
                                 debugPrint('Image load error for $url: $error');
-                                return Container(
-                                  color: Colors.grey[300],
-                                  child: const Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.broken_image, color: Colors.grey, size: 40),
-                                        SizedBox(height: 4),
-                                        Text(
-                                          'Resim yüklenemedi',
-                                          style: TextStyle(fontSize: 10, color: Colors.grey),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                return Image.asset(
+                                  'assets/cin_logo.png',
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
                                 );
                               },
                               memCacheWidth: 400,
@@ -145,37 +114,17 @@ class QuizCard extends StatelessWidget {
                               maxWidthDiskCache: 400,
                               maxHeightDiskCache: 300,
                             )
-                          : Container(
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.image_not_supported, color: Colors.grey, size: 40),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Geçersiz resim formatı',
-                                      style: TextStyle(fontSize: 10, color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                          : Image.asset(
+                              'assets/cin_logo.png',
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
                             )
-                  : Container(
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.image_not_supported, color: Colors.grey, size: 40),
-                            SizedBox(height: 4),
-                            Text(
-                              'Resim URL\'si yok',
-                              style: TextStyle(fontSize: 10, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ),
+                  : Image.asset(
+                      'assets/cin_logo.png',
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
                     ),
             ),
             // Gradient overlay (yazıların okunabilirliği için)

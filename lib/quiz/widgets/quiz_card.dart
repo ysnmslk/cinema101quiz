@@ -67,20 +67,11 @@ class QuizCard extends StatelessWidget {
                           ),
                           errorWidget: (context, url, error) {
                             debugPrint('Image load error for $url: $error');
-                            return Container(
+                            return Image.asset(
+                              'assets/cin_logo.png',
+                              width: double.infinity,
                               height: 150,
-                              color: Colors.grey[300],
-                              child: const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.broken_image, color: Colors.grey, size: 50),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Resim yüklenemedi',
-                                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                                  ),
-                                ],
-                              ),
+                              fit: BoxFit.cover,
                             );
                           },
                           memCacheWidth: 600,
@@ -90,20 +81,11 @@ class QuizCard extends StatelessWidget {
                           maxWidthDiskCache: 600,
                           maxHeightDiskCache: 400,
                         )
-                      : Container(
+                      : Image.asset(
+                          'assets/cin_logo.png',
+                          width: double.infinity,
                           height: 150,
-                          color: Colors.grey[300],
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.image_not_supported, color: Colors.grey, size: 50),
-                              SizedBox(height: 4),
-                              Text(
-                                'Resim URL\'si yok',
-                                style: TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
-                            ],
-                          ),
+                          fit: BoxFit.cover,
                         ),
                 ),
                 // Eğer quiz tamamlandıysa, sağ üst köşeye bir ikon ekle
