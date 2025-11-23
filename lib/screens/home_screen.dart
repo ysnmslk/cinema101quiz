@@ -9,6 +9,7 @@ import '../home/widgets/quiz_card.dart';
 import '../profile/services/firestore_service.dart';
 import '../quiz/models/quiz_model.dart';
 import '../quiz/services/quiz_service.dart';
+import '../shared/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -79,6 +80,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cin101'),
+        leading: kIsWeb
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              )
+            : null,
         actions: [
           // Sadece admin kullanıcılar için quiz ekleme butonu
           if (_isAdmin && !_isLoadingAdmin)
@@ -206,36 +215,39 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              // Zaten ana sayfadayız
-              break;
-            case 1:
-              context.go('/profile');
-              break;
-            case 2:
-              context.go('/settings');
-              break;
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Ana Sayfa',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Ayarlar',
-          ),
-        ],
-      ),
+      drawer: kIsWeb ? const AppDrawer(currentIndex: 0) : null,
+      bottomNavigationBar: kIsWeb
+          ? null
+          : BottomNavigationBar(
+              currentIndex: 0,
+              onTap: (index) {
+                switch (index) {
+                  case 0:
+                    // Zaten ana sayfadayız
+                    break;
+                  case 1:
+                    context.go('/profile');
+                    break;
+                  case 2:
+                    context.go('/settings');
+                    break;
+                }
+              },
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home),
+                  label: 'Ana Sayfa',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Profil',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings),
+                  label: 'Ayarlar',
+                ),
+              ],
+            ),
     );
   }
 }

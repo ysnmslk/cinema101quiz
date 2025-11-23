@@ -1,9 +1,11 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myapp/auth/services/auth_service.dart';
 import 'package:myapp/theme/theme_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:myapp/shared/app_drawer.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -24,6 +26,14 @@ class SettingsScreen extends StatelessWidget {
         title: const Text('Ayarlar'),
         centerTitle: true,
         elevation: 0,
+        leading: kIsWeb
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              )
+            : null,
       ),
       body: ListView(
       children: [
@@ -89,36 +99,39 @@ class SettingsScreen extends StatelessWidget {
         ),
       ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              context.go('/');
-              break;
-            case 1:
-              context.go('/profile');
-              break;
-            case 2:
-              // Zaten ayarlar sayfasındayız
-              break;
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Ana Sayfa',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Ayarlar',
-          ),
-        ],
-      ),
+      drawer: kIsWeb ? const AppDrawer(currentIndex: 2) : null,
+      bottomNavigationBar: kIsWeb
+          ? null
+          : BottomNavigationBar(
+              currentIndex: 2,
+              onTap: (index) {
+                switch (index) {
+                  case 0:
+                    context.go('/');
+                    break;
+                  case 1:
+                    context.go('/profile');
+                    break;
+                  case 2:
+                    // Zaten ayarlar sayfasındayız
+                    break;
+                }
+              },
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home),
+                  label: 'Ana Sayfa',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Profil',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings),
+                  label: 'Ayarlar',
+                ),
+              ],
+            ),
     );
   }
 

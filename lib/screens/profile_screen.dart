@@ -12,6 +12,7 @@ import '../profile/services/firestore_service.dart';
 import '../profile/screens/certificate_screen.dart';
 import '../quiz/models/quiz_models.dart';
 import '../quiz/services/quiz_service.dart';
+import '../shared/app_drawer.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -35,6 +36,14 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('Profil'),
         centerTitle: true,
         elevation: 0,
+        leading: kIsWeb
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              )
+            : null,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -49,36 +58,39 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              context.go('/');
-              break;
-            case 1:
-              // Zaten profil sayfasındayız
-              break;
-            case 2:
-              context.go('/settings');
-              break;
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Ana Sayfa',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Ayarlar',
-          ),
-        ],
-      ),
+      drawer: kIsWeb ? const AppDrawer(currentIndex: 1) : null,
+      bottomNavigationBar: kIsWeb
+          ? null
+          : BottomNavigationBar(
+              currentIndex: 1,
+              onTap: (index) {
+                switch (index) {
+                  case 0:
+                    context.go('/');
+                    break;
+                  case 1:
+                    // Zaten profil sayfasındayız
+                    break;
+                  case 2:
+                    context.go('/settings');
+                    break;
+                }
+              },
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home),
+                  label: 'Ana Sayfa',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Profil',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings),
+                  label: 'Ayarlar',
+                ),
+              ],
+            ),
     );
   }
 
@@ -143,7 +155,6 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 _buildStatItem(context, 'Toplam Puan', stats['totalScore'].toString()),
                 _buildStatItem(context, 'Çözülen Quiz', stats['quizzesSolved'].toString()),
-                _buildStatItem(context, 'Ortalama', '${(stats['averageScore'] as double).toStringAsFixed(1)}%'),
               ],
             );
           },

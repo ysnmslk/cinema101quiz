@@ -78,13 +78,13 @@ class _QuizScreenState extends State<QuizScreen> {
 
     if (userId.isNotEmpty) {
       await context.read<FirestoreService>().saveUserResult(
-            userId,
-            widget.quiz.id,
-            _score,
-            questions.length,
-          );
+        userId,
+        widget.quiz.id,
+        _score,
+        questions.length,
+      );
     }
-    
+
     if (!mounted) return;
 
     Navigator.pushReplacement(
@@ -131,7 +131,7 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
             );
           }
-          
+
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(
               child: Column(
@@ -164,52 +164,176 @@ class _QuizScreenState extends State<QuizScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // AdMob reklam alanı için boş alan
+          const SizedBox(
+            height: 100,
+            child: Center(
+              child: Text(
+                'Reklam Alanı',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           LinearProgressIndicator(
             value: (_currentQuestionIndex + 1) / questions.length,
             backgroundColor: Colors.grey[300],
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(3),
           ),
           const SizedBox(height: 16),
           Text(
             'Soru ${_currentQuestionIndex + 1} / ${questions.length}',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
+          // Modern balon tasarımında soru
           Flexible(
             child: SingleChildScrollView(
-              child: Text(
-                question.text,
-                style: Theme.of(context).textTheme.headlineSmall,
-                textAlign: TextAlign.center,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  question.text,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           Expanded(
             child: ListView.builder(
               itemCount: question.options.length,
               itemBuilder: (context, index) {
                 final option = question.options[index];
                 bool isSelected = _selectedAnswers[_currentQuestionIndex] == index;
-                Color? tileColor;
+                Color? bubbleColor;
+                Color? textColor;
                 Icon? trailingIcon;
+                String optionLabel = String.fromCharCode(65 + index); // A, B, C, D
 
                 if (isAnswered) {
                   if (option.isCorrect) {
-                    tileColor = Colors.green.withAlpha(75);
-                    trailingIcon = const Icon(Icons.check, color: Colors.green);
+                    bubbleColor = Colors.green.withOpacity(0.15);
+                    textColor = Colors.green.shade700;
+                    trailingIcon = Icon(Icons.check_circle, color: Colors.green.shade700, size: 28);
                   } else if (isSelected) {
-                    tileColor = Colors.red.withAlpha(75);
-                    trailingIcon = const Icon(Icons.close, color: Colors.red);
+                    bubbleColor = Colors.red.withOpacity(0.15);
+                    textColor = Colors.red.shade700;
+                    trailingIcon = Icon(Icons.cancel, color: Colors.red.shade700, size: 28);
+                  } else {
+                    bubbleColor = Colors.grey.withOpacity(0.1);
+                    textColor = Colors.grey.shade700;
                   }
+                } else {
+                  bubbleColor = isSelected
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.surface;
+                  textColor = isSelected
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : Theme.of(context).colorScheme.onSurface;
                 }
 
-                return Card(
-                  color: tileColor,
-                  child: ListTile(
-                    title: Text(option.text),
-                    onTap: isAnswered ? null : () => _answerQuestion(index, questions),
-                    trailing: trailingIcon,
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: isAnswered ? null : () => _answerQuestion(index, questions),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                        decoration: BoxDecoration(
+                          color: bubbleColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey.withOpacity(0.3),
+                            width: isSelected ? 2.5 : 1.5,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                              : null,
+                        ),
+                        child: Row(
+                          children: [
+                            // Seçenek harfi (A, B, C, D)
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.grey.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  optionLabel,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? Theme.of(context).colorScheme.onPrimary
+                                        : Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // Seçenek metni
+                            Expanded(
+                              child: Text(
+                                option.text,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 16,
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                            // İkon (doğru/yanlış)
+                            if (trailingIcon != null) ...[
+                              const SizedBox(width: 12),
+                              trailingIcon,
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 );
               },
@@ -224,6 +348,9 @@ class _QuizScreenState extends State<QuizScreen> {
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               onPressed: () => _showResults(questions),
             )
