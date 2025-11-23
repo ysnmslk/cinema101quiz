@@ -153,7 +153,7 @@ class ProfileScreen extends StatelessWidget {
             return Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem(context, 'Toplam Puan', stats['totalScore'].toString()),
+                _buildStatItem(context, 'Toplam Doğru', stats['totalScore'].toString()),
                 _buildStatItem(context, 'Çözülen Quiz', stats['quizzesSolved'].toString()),
               ],
             );
