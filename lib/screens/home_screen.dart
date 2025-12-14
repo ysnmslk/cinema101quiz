@@ -127,6 +127,15 @@ class _HomeScreenState extends State<HomeScreen> {
               )
             : null,
         actions: [
+          // Sadece admin kullanıcılar için admin paneli butonu
+          if (_isAdmin && !_isLoadingAdmin)
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings),
+              tooltip: 'Admin Paneli',
+              onPressed: () {
+                context.go('/admin');
+              },
+            ),
           // Sadece admin kullanıcılar için quiz ekleme butonu
           if (_isAdmin && !_isLoadingAdmin)
             IconButton(

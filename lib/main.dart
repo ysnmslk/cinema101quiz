@@ -8,6 +8,8 @@ import 'package:myapp/auth/services/auth_service.dart';
 import 'package:myapp/auth/services/firebase_auth_service.dart';
 import 'package:myapp/profile/services/firebase_firestore_service.dart';
 import 'package:myapp/profile/services/firestore_service.dart';
+import 'package:myapp/admin/screens/admin_panel_screen.dart';
+import 'package:myapp/admin/screens/admin_quiz_detail_screen.dart';
 import 'package:myapp/quiz/screens/add_quiz_screen.dart';
 import 'package:myapp/quiz/services/firebase_quiz_service.dart';
 import 'package:myapp/quiz/services/quiz_service.dart';
@@ -135,6 +137,18 @@ GoRouter _createRouter(AuthService authService) {
           GoRoute(
             path: 'add-quiz',
             builder: (context, state) => const AddQuizScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminPanelScreen(),
+        routes: [
+          GoRoute(
+            path: 'quiz/:id',
+            builder: (context, state) => AdminQuizDetailScreen(
+              quizId: state.pathParameters['id']!,
+            ),
           ),
         ],
       ),
