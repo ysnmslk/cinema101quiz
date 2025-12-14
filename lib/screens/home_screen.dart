@@ -19,7 +19,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-enum QuizFilter { all, solved, unsolved, turkish, hollywood }
+enum QuizFilter { all, solved, unsolved, turkish, hollywood, devQuiz }
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
@@ -84,6 +84,12 @@ class _HomeScreenState extends State<HomeScreen> {
         filtered = quizzes.where((quiz) {
           final desc = quiz.description.toLowerCase();
           return desc.contains('hollywood');
+        }).toList();
+        break;
+      case QuizFilter.devQuiz:
+        filtered = quizzes.where((quiz) {
+          final desc = quiz.description.toLowerCase();
+          return desc.contains('devquiz') || desc.contains('dev quiz');
         }).toList();
         break;
       case QuizFilter.all:
@@ -192,6 +198,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildFilterChip('Yerli', QuizFilter.turkish),
                     const SizedBox(width: 8),
                     _buildFilterChip('Hollywood', QuizFilter.hollywood),
+                    const SizedBox(width: 8),
+                    _buildFilterChip('DevQuiz', QuizFilter.devQuiz),
                   ],
                 ),
               ),
@@ -316,25 +324,37 @@ class _HomeScreenState extends State<HomeScreen> {
     // Responsive grid için ekran genişliğine göre sütun sayısı belirle
     final screenWidth = MediaQuery.of(context).size.width;
     int crossAxisCount;
+    double padding;
+    double crossAxisSpacing;
+    double mainAxisSpacing;
     
     if (screenWidth < 600) {
-      // Cep telefonu: 2 sütun
+      // Cep telefonu: 2 sütun, geniş kenar boşlukları ve aralıklar
       crossAxisCount = 2;
+      padding = 16.0;
+      crossAxisSpacing = 16.0;
+      mainAxisSpacing = 16.0;
     } else if (screenWidth < 1200) {
-      // Tablet: 4 sütun
+      // Tablet: 4 sütun, geniş aralıklar
       crossAxisCount = 4;
+      padding = 20.0;
+      crossAxisSpacing = 20.0;
+      mainAxisSpacing = 20.0;
     } else {
-      // Bilgisayar: Ekran genişliğine göre otomatik (her 300px için 1 sütun, min 4, max 8)
-      crossAxisCount = (screenWidth / 300).floor().clamp(4, 8);
+      // Bilgisayar: 8 sütun
+      crossAxisCount = 8;
+      padding = 24.0;
+      crossAxisSpacing = 16.0;
+      mainAxisSpacing = 16.0;
     }
     
     return GridView.builder(
-      padding: const EdgeInsets.all(12.0),
+      padding: EdgeInsets.all(padding),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 12.0,
-        mainAxisSpacing: 12.0,
-        childAspectRatio: 0.7, // Kart genişliği/yüksekliği oranı (daha yüksek kartlar için)
+        crossAxisSpacing: crossAxisSpacing,
+        mainAxisSpacing: mainAxisSpacing,
+        childAspectRatio: 0.85, // Kart genişliği/yüksekliği oranı (daha kısa kartlar için)
       ),
       itemCount: filteredQuizzes.length,
       itemBuilder: (context, index) {
