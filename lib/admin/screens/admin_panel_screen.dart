@@ -7,7 +7,7 @@ import '../../auth/services/auth_service.dart';
 import '../../profile/services/firestore_service.dart';
 import '../../quiz/models/quiz_model.dart';
 import '../../quiz/services/quiz_service.dart';
-import '../../home/widgets/quiz_card.dart';
+
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
