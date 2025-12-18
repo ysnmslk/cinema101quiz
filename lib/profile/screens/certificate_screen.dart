@@ -60,12 +60,12 @@ class _CertificateScreenState extends State<CertificateScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'BAŞARI SERTİFİKASI',
+                  'Quiz Başarı Belgesi',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.brown),
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'Bu sertifika, aşağıdaki quizi başarıyla tamamlayan kişiye takdim edilmiştir:',
+                  'Film böyle izlenir. Var mısın kapışmaya?',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16),
                 ),
@@ -94,7 +94,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
-                    'Sen de sinema bilginle arkadaşlarınla yarışmak için Cinema101 quiz uygulamasını indir',
+                    "Sen de sinema bilginle yarışmak için cinema101quiz'e gel",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -109,7 +109,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                     final String shareText = 
                         'Cinema101 Quiz\'te ${quiz.title} quizini tamamladım! '
                         'Puanım: ${result.score}/${result.totalQuestions} (%${scorePercentage.toStringAsFixed(1)})\n\n'
-                        'Sen de sinema bilginle arkadaşlarınla yarışmak için Cinema101 quiz uygulamasını indir!';
+                        "Sen de sinema bilginle yarışmak için cinema101quiz'e gel";
                     
                     await Share.share(
                       shareText,
