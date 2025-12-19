@@ -163,9 +163,13 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                     // Ortada quiz içeriği
                     Expanded(
-                      child: Center(
+                      child: Align(
+                        alignment: Alignment.topCenter,
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 800),
+                          constraints: const BoxConstraints(
+                            maxWidth: 800,
+                            maxHeight: double.infinity,
+                          ),
                           child: _buildQuizContent(context, quiz, question, selectedIndex),
                         ),
                       ),
@@ -233,7 +237,8 @@ class _QuizScreenState extends State<QuizScreen> {
                 ),
                 const SizedBox(height: 16),
                 // Modern balon tasarımında soru
-                Flexible(
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 200),
                   child: SingleChildScrollView(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -268,6 +273,9 @@ class _QuizScreenState extends State<QuizScreen> {
                 // Modern şık tasarımları
                 Expanded(
                   child: ListView.builder(
+                    shrinkWrap: false,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 20),
                     itemCount: question.options.length,
                     itemBuilder: (context, index) {
                       final option = question.options[index];
