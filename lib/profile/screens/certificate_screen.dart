@@ -94,7 +94,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
-                    "Sen de sinema bilginle yarışmak için cinema101quiz'e gel",
+                    "Sen de sinema bilginle yarışmak için www.cinema101quiz'e gel",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
